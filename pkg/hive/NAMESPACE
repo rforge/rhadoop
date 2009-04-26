@@ -1,0 +1,28 @@
+export(## the hive
+       "hive",
+       ## System handlers
+       ".hinit",
+       "hive_create",
+       "hive_start",
+       "hive_stop",
+       "hive_is_available",
+       ## DFS wrappers
+       "DFS_file_exists",
+       "DFS_dir_create",
+       "DFS_dir_exists",
+       "DFS_format",
+       "DFS_put",
+       "DFS_put_object",
+       "DFS_list",
+       "DFS_cat",
+       "DFS_tail",
+       "DFS_dir_remove",
+       ## MapReduce functions
+       ##"hadoop_map_reduce",
+       ##"hadoop_map",
+       ## Configuration
+       "hadoop_get_parameter",
+       "hadoop_get_slaves",
+       "hadoop_get_masters")
+
+S3method("print", "hive")
