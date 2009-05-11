@@ -3,7 +3,7 @@
 ## MAPPERS
 
 ## all mappers available have to be listed here
-.hadoop_mappers <- c("wordcount", "tm", "tm_test")
+.hadoop_mappers <- c("wordcount", "hs", "tm", "tm_test")
 
 ## Example from Luke Tierneys course
 ## Input: standard text file
@@ -27,6 +27,54 @@ while (length(line <- readLines(con, n = 1, warn = FALSE)) > 0) {
       mapred_write_output(words, 1)
 }
 close(con)
+
+', script)
+}
+
+.hadoop_generate_hs_mapper <- function(script){
+  writeLines('#!/usr/bin/env Rscript
+library(HadoopStreaming)
+
+## Additional command line arguments for this script (rest are default in hsCmdLineArgs)
+spec = c("chunkSize","c",1,"numeric","Number of lines to read at once, a la scan.",-1)
+
+opts = hsCmdLineArgs(spec, openConnections=T)
+
+if (!opts$set) {
+  quit(status=0)
+}
+
+mapperOutCols = c("word","cnt")
+reducerOutCols = c("word","cnt")
+
+if (opts$mapcols) {
+  cat( paste(mapperOutCols,collapse=opts$outsep),"\n", file=opts$outcon )
+}
+
+if (opts$reducecols) {
+  cat( paste(reducerOutCols,collapse=opts$outsep),"\n", file=opts$outcon )
+}
+
+if (opts$mapper) {
+  mapper <- function(d) {
+    words <- strsplit(paste(d,collapse=" "),"[[:punct:][:space:]]+")[[1]] # split on punctuation and spaces
+    words <- words[!(words=="")]  # get rid of empty words caused by whitespace at beginning of lines
+    df = data.frame(word=words)
+    df[,"cnt"]=1
+    hsWriteTable(df[,mapperOutCols],file=opts$outcon,sep=opts$outsep)
+  }
+
+  hsLineReader(opts$incon,chunkSize=opts$chunkSize,FUN=mapper)
+
+} else if (opts$reducer) {
+
+  reducer <- function(d) {
+    cat(d[1,"word"],sum(d$cnt),"\n",sep=opts$outsep)
+  }
+  cols=list(word="",cnt=0)  # define the column names and types (""-->string 0-->numeric)
+  hsTableReader(opts$incon,cols,chunkSize=opts$chunkSize,skip=opts$skip,sep=opts$insep,keyCol="word",singleKey=T, ignoreKey= F, FUN=reducer)
+}
+
 
 ', script)
 }
@@ -77,6 +125,7 @@ close(con)
   generator <- switch(mapper,
                       "wordcount" = .hadoop_generate_word_count_mapper,
                       "tm" = .hadoop_generate_tm_mapper,
+                      "hs" = .hadoop_generate_hs_mapper,
                       "tm_test" = .hadoop_generate_tm_test_mapper,
                       stop(sprintf("There is no mapper named '%s'!", mapper)))
   generator

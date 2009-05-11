@@ -29,10 +29,23 @@ hive_stream(mapper = map_script, reducer = reduce_script, input = "./data/OzBook
 results <- hive:::hive_get_results("./ozout")
 head(results)
 tail(results)
+length(results)
 ## top occuring words
 head(sort(results, decreasing = TRUE))
 
+## delete output repository
+DFS_dir_remove("./ozout")
+
 ### END EXAMPLE 1: wordcount ###
+
+### EXAMPLE 2: wordcount using package HadoopStreaming ###
+map_script <- hive:::hadoop_generate_mapper("hs")
+hive_stream(mapper = map_script, reducer = map_script, input = "./data/OzBooks",
+            output = "ozout", mapper_args = "--mapper", reducer_args = "--mapper")
+
+
+
+### END EXAMPLE 2: wordcount using package HadoopStreaming ###
 
 ### CLEANUP ###
 
