@@ -1,5 +1,5 @@
 ## Getters
-hadoop_get_parameter <- function(x, henv = hive()){
+hive_get_parameter <- function(x, henv = hive()){
   ## first search in hadoop-site configuration (overrules defaults)
   site <- .hadoop_configuration("hadoop_site", henv)[x]
   if(is.na(site))
@@ -8,26 +8,26 @@ hadoop_get_parameter <- function(x, henv = hive()){
   site
 }
 
-hadoop_get_slaves <- function(henv = hive()){
+hive_get_slaves <- function(henv = hive()){
  .hadoop_configuration("slaves", henv)
 }
 
-hadoop_get_masters <- function(henv = hive()){
+hive_get_masters <- function(henv = hive()){
   .hadoop_configuration("masters", henv)
 }
 
 .hadoop_configuration <- function(x, henv){
-  get("configuration", con)[[x]]
+  get("configuration", henv)[[x]]
 }
 
 ## Setters
 
 ## FIXME: not updated yet
-hadoop_set_slaves <- function(slaves, henv){
-  hadoop_stop()
+hive_set_slaves <- function(slaves, henv){
+  hive_stop(henv)
   slave_conf <- file.path(hadoop_home(henv), "conf", "slaves")
-  writeLines(slaves, henv = slave_conf)
-  hadoop_start()
+  writeLines(slaves, con = slave_conf)
+  hive_start(henv)
 }
 
 ## Hadoop config XML parser

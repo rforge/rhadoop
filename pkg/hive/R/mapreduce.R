@@ -175,30 +175,4 @@ hadoop_generate_reducer <- function(reducer = .hadoop_reducers, ...){
   invisible(script)
 }
 
-## High-level wrapper for hadoop-streaming (map-only)
-## TODO: ncpu argument -> probably via -D mapred.jobtracker.maxtasks.per.job=..
-hadoop_map <- function(mapper, input, output, ...) {
-  mapper_script <- hadoop_generate_mapper(mapper, ...)
-  msg <- system(sprintf('%s jar %s/contrib/streaming/hadoop-*-streaming.jar -D mapred.reduce.tasks=0 -input %s -mapper %s -output %s -file %s',
-                        hadoop, hadoop_home, input, mapper_script,
-                        output, mapper_script), intern = TRUE)
-  if(file.exists(mapper_script))
-    file.remove(mapper_script)
-  invisible(msg)
-}
-
-## High-level wrapper for hadoop-streaming (MapReduce)
-
-hadoop_map_reduce <- function(mapper, reducer, input, output, ...) {
-  mapper_script <- hadoop_generate_mapper(mapper)
-  reducer_script <- hadoop_generate_reducer(reducer)
-  msg <- system(sprintf('%s jar %s/contrib/streaming/hadoop-*-streaming.jar -D mapred.reduce.tasks=1 -input %s -mapper %s -reducer %s -output %s -file %s -file %s',
-                        hadoop, hadoop_home, input, mapper_script,
-                        reducer_script, output, mapper_script, reducer_script),
-                intern = TRUE)
-  if(file.exists(mapper_script))
-    file.remove(mapper_script)
-  invisible(msg)
-}
-
 

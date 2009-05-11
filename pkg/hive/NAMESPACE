@@ -18,11 +18,10 @@ export(## the hive
        "DFS_tail",
        "DFS_dir_remove",
        ## MapReduce functions
-       ##"hadoop_map_reduce",
-       ##"hadoop_map",
+       "hive_stream",
        ## Configuration
-       "hadoop_get_parameter",
-       "hadoop_get_slaves",
-       "hadoop_get_masters")
+       "hive_get_parameter",
+       "hive_get_masters",
+       "hive_get_slaves")
 
 S3method("print", "hive")

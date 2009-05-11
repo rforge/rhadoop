@@ -1,8 +1,10 @@
 \name{hive}
+\alias{hive}
 \alias{.hinit}
 \alias{hive_create}
-\alias{hive_start}
 \alias{hive_is_available}
+\alias{hive_start}
+\alias{hive_stop}
 \title{Hadoop Interactive Framework Control}
 \description{
   
@@ -26,14 +28,14 @@ hive_is_available( henv = hive() )
 \details{
   High-level functions to control Hadoop framework.
 
-  The function \code{hive()} is used to get/set the Hadoop cluster
+  The function \code{hive} is used to get/set the Hadoop cluster
   object.
 
-  The function \code{.hinit()} is used to initialize a Hadoop cluster.
+  The function \code{.hinit} is used to initialize a Hadoop cluster.
 
-  The function \code{hive_create()} creates a new Hadoop cluster object.
+  The function \code{hive_create} creates a new Hadoop cluster object.
 
-  The functions \code{hive_start()} and \code{hive_stop} are used to
+  The functions \code{hive_start} and \code{hive_stop} are used to
   start/stop the Hadoop framework.
 
   The function \code{hive_is_available()} is used to check Hadoop cluster
@@ -61,4 +63,4 @@ hive_is_available( henv = hive() )
 ## hive_stop()
 
 }
-\keyword{hpc}
+%\keyword{hpc}
