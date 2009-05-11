@@ -41,8 +41,7 @@ DFS_dir_remove("./ozout")
 ### EXAMPLE 2: wordcount using package HadoopStreaming ###
 map_script <- hive:::hadoop_generate_mapper("hs")
 hive_stream(mapper = map_script, reducer = map_script, input = "./data/OzBooks",
-            output = "ozout", mapper_args = "--mapper", reducer_args = "--mapper")
-
+            output = "ozout", mapper_args = "--mapper", reducer_args = "--mapper", cmdenv_arg = "R_LIBS='/home/theussl/lib/R/2.9'")
 
 
 ### END EXAMPLE 2: wordcount using package HadoopStreaming ###
