@@ -25,7 +25,7 @@ DFS_file_exists( file, henv = hive() )
 DFS_format( henv )
 DFS_list( path = ".", henv = hive() )
 DFS_tail( file, con = stdout(), henv = hive() )
-DFS_put( files, path = ".", henv = hive() )
+DFS_put( files, to = ".", henv = hive() )
 DFS_put_object( obj, path = ".", henv = hive() )
 
 }

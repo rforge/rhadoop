@@ -82,10 +82,7 @@ if (opts$mapper) {
 # TODO: Think about where to store generated map file (HFS?)
 ## Does not work on my laptop, most likely due to open mpi!!!
 .hadoop_generate_tm_mapper <- function(script, FUN, ...) {
-  local_library <- "/usr/local/tmp/lib/R" # FIXME: this needs to be changed to something like Sys.getenv("R_LIBS")
-  #local_library <-"/home/feinerer/lib/R/library"
   writeLines(sprintf('#!/usr/bin/env Rscript
-.libPaths(new = "%s")
 require("tm")
 fun <- %s
 input <- readLines(file("stdin"))
@@ -93,7 +90,7 @@ doc <- new("PlainTextDocument", .Data = input[1:(length(input) - 1)], DateTimeSt
 result <- fun(doc)
 writeLines(Content(result))
 writeLines(input[length(input)])
-', local_library, FUN), script)
+', FUN), script)
 }
 
 ## here without loading heavy weight tm package

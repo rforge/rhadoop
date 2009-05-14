@@ -76,60 +76,70 @@ DFS_list <- function( path = ".", henv = hive() ) {
   .DFS( "-ls", path, henv )
 }
 
-DFS_cat <- function( file, con = stdout(), henv = hive() ){
-  stopifnot( DFS_file_exists( file, henv) )
-  cat(.DFS( "-cat", file, henv ), con)
+DFS_cat <- function( x, henv = hive() ){
+  stopifnot( DFS_file_exists(x, henv) )
+  .DFS("-cat", x, henv)
 }
 
-DFS_tail <- function(file, con = stdout(), henv = hive() ){
-  stopifnot( DFS_file_exists( file, henv) )
-  cat(.DFS( "-tail", file, henv ), con)
+DFS_tail <- function(file, n = 6L, henv = hive() ){
+  stopifnot( as.integer(n) > 0L )
+  stopifnot( DFS_file_exists(file, henv) )
+  out <- .DFS_intern( "-tail", file, henv )
+  len <- length(out)
+  out[(len - (n - 1)) : len]
 }
 
 # Load local files into hadoop and distribute them along its nodes
-DFS_put <- function( files, path = ".", henv = hive() ) {
-  if( !DFS_dir_exists(path, henv) )
-    DFS_dir_create( path, henv )
-  status <- .DFS("-put", paste(paste(files, collapse = " "), path), henv )
+DFS_put <- function( files, to = ".", henv = hive() ) {
+  if(length(files) == 1)
+    status <- .DFS("-put", paste(files, to), henv )
+  else {
+    if( !DFS_dir_exists(to, henv) )
+      DFS_dir_create( to, henv )
+    status <- .DFS("-put", paste(paste(files, collapse = " "), to), henv )
+  }
   if( status ){
-    warning( sprintf("Cannot put file(s) to '%s'.", path) )
+    warning( sprintf("Cannot put file(s) to '%s'.", to) )
     return( invisible(FALSE) )
   }
   invisible( TRUE )
 }
 
 ## serialize R object to DFS
-DFS_put_object <- function( obj, path = ".", henv = hive() ) {
-  if( DFS_file_exists(path, henv) ){
-    warning( sprintf("File '%s' already exists in DFS.", path) )
-    return( invisible(FALSE) )
-  }
-  con <- .DFS_pipe( "-put", path, henv )
-  serialize( obj, con )
+DFS_put_object <- function( obj, file, henv = hive() ) {
+  con <- .DFS_pipe( "-put", file, open = "w", henv = henv )
+  status <- tryCatch(serialize( obj, con ), error = identity)
   close.connection(con)
-  invisible( TRUE )
+  if(inherits(status, "error"))
+    stop("Serialization failed")
+  invisible(file)
+}
+
+## serialize R object from DFS
+DFS_get_object <- function( file, henv = hive() ) {
+  con <- .DFS_pipe( "-cat", file, open = "r", henv = henv )
+  obj <- tryCatch( unserialize(con), error = identity)
+  close.connection(con)
+  if(inherits(obj, "error"))
+     return(NA)
+  obj
 }
 
 .DFS <- function( cmd, args, henv )
   system( .DFS_create_command(cmd, args, henv), ignore.stderr = TRUE )
 
-.DFS_pipe <- function( cmd, args, henv )
-  pipe(.DFS_create_command(cmd, sprintf("- %s", args), henv), open = "w")
+.DFS_pipe <- function( cmd, args, open = "w", henv ){
+  if(open == "w")
+    pipe(.DFS_create_command(cmd, sprintf("- %s", args), henv), open = open)
+  else
+    pipe(.DFS_create_command(cmd, args, henv), open = open)
+}
 
 .DFS_intern <- function( cmd, args, henv )
   system( .DFS_create_command(cmd, args, henv), intern = TRUE, ignore.stderr = TRUE )
 
 .DFS_create_command <- function( cmd, args, henv )
   sprintf("%s fs %s %s", hadoop(henv), cmd, args)
-
-## Fetch distributed files and return them as character vector
-## hadoop_cat_files <- function(dir = "input", con = stdout())
-##    writeLines(system(sprintf("%s fs -cat %s/*", hadoop, dir), intern = TRUE), henv)
-
-## hadoop_get_last_line <- function(file){
-##   out <- system(sprintf("%s fs -tail %s", hadoop, file), intern = TRUE)
-##   out[length(out)]
-## }
 
 
 # Fetch distributed files and return them as character vector
