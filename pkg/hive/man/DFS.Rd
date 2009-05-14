@@ -5,6 +5,7 @@
 \alias{DFS_dir_remove}
 \alias{DFS_file_exists}
 \alias{DFS_format}
+\alias{DFS_get_object}
 \alias{DFS_list}
 \alias{DFS_put}
 \alias{DFS_put_object}
@@ -23,17 +24,18 @@ DFS_dir_exists( path, henv = hive() )
 DFS_dir_remove( path, recursive = TRUE, henv = hive() )
 DFS_file_exists( file, henv = hive() )
 DFS_format( henv )
+DFS_get_object( file, henv = hive() )
 DFS_list( path = ".", henv = hive() )
 DFS_tail( file, con = stdout(), henv = hive() )
 DFS_put( files, to = ".", henv = hive() )
-DFS_put_object( obj, path = ".", henv = hive() )
+DFS_put_object( obj, file, henv = hive() )
 
 }
 \arguments{
   \item{henv}{Hadoop local environment.}
   \item{file}{a character string representing a file in the DFS.}
   \item{files}{a character string representing files to be copied to the DFS.}
-  \item{obj}{an R object to be serialized to the DFS.}
+  \item{obj}{an R object to be serialized to/from the DFS.}
   \item{path}{a character string representing a full path name in the
     DFS (without the leading \code{hdfs://}); for many functions the
     default corresponds to the user's home directory in the DFS.}

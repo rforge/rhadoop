@@ -79,17 +79,16 @@ if (opts$mapper) {
 ', script)
 }
 
-# TODO: Think about where to store generated map file (HFS?)
-## Does not work on my laptop, most likely due to open mpi!!!
+# TODO: Think about where to store generated map file (HDFS?)
 .hadoop_generate_tm_mapper <- function(script, FUN, ...) {
   writeLines(sprintf('#!/usr/bin/env Rscript
 require("tm")
 fun <- %s
-input <- readLines(file("stdin"))
-doc <- new("PlainTextDocument", .Data = input[1:(length(input) - 1)], DateTimeStamp = Sys.time())
-result <- fun(doc)
-writeLines(Content(result))
-writeLines(input[length(input)])
+input <- readLines( file("stdin") )
+doc <- new( "PlainTextDocument", .Data = input[ -1L ], DateTimeStamp = Sys.time() )
+result <- fun( doc )
+writeLines( input[ 1 ] )
+writeLines( Content(result) )
 ', FUN), script)
 }
 

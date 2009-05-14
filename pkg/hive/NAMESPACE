@@ -7,16 +7,19 @@ export(## the hive
        "hive_stop",
        "hive_is_available",
        ## DFS wrappers
-       "DFS_file_exists",
+       "DFS_cat",
        "DFS_dir_create",
        "DFS_dir_exists",
+       "DFS_dir_remove",
+       "DFS_file_exists",
        "DFS_format",
+       "DFS_get_object",
+       "DFS_list",
        "DFS_put",
        "DFS_put_object",
-       "DFS_list",
-       "DFS_cat",
+       "DFS_read_lines",
        "DFS_tail",
-       "DFS_dir_remove",
+       "DFS_write_lines",
        ## MapReduce functions
        "hive_stream",
        ## Configuration

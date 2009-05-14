@@ -15,7 +15,7 @@ rm -rf %s-*' ", machine, DFS_root, DFS_root)
     system(command)
   }
   ## reformat DFS
-  system(sprintf("%s namenode -format", hadoop))
+  system(sprintf("%s namenode -format", hadoop(henv)))
 }
 
 ## out of simplicity queries status of / in DFS 
@@ -111,8 +111,29 @@ DFS_put_object <- function( obj, file, henv = hive() ) {
   status <- tryCatch(serialize( obj, con ), error = identity)
   close.connection(con)
   if(inherits(status, "error"))
-    stop("Serialization failed")
+    stop("Serialization failed.")
   invisible(file)
+}
+
+DFS_write_lines <- function( text, file, henv = hive(), ... ) {
+  con <- .DFS_pipe( "-put", file, open = "w", henv = henv )
+  status <- tryCatch( writeLines(text = text, con = con, ...), error = identity )
+  close.connection(con)
+  if(inherits(status, "error"))
+    stop("Cannot write to connection.")
+  invisible(file)
+}
+
+## serialize R object from DFS
+DFS_read_lines <- function( file, n = -1L, henv = hive(), ... ) {
+  con <- .DFS_pipe( "-cat", file, open = "r", henv = henv )
+  text <- tryCatch( readLines(con = con, n = -1L, ...), error = identity)
+  close.connection(con)
+  if(inherits(text, "error"))
+     return(NA)
+  if(n > 0L)
+    return(text[1L:n])
+  text
 }
 
 ## serialize R object from DFS
