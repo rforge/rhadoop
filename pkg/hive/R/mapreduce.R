@@ -84,11 +84,24 @@ if (opts$mapper) {
   writeLines(sprintf('#!/usr/bin/env Rscript
 require("tm")
 fun <- %s
-input <- readLines( file("stdin") )
-doc <- new( "PlainTextDocument", .Data = input[ -1L ], DateTimeStamp = Sys.time() )
-result <- fun( doc )
-writeLines( input[ 1 ] )
-writeLines( Content(result) )
+
+split_line <- function(line) {
+    val <- unlist(strsplit(line, "\t"))
+    list(key = val[1], value = as.character(val[2]))
+}
+mapred_write_output <- function(key, value)
+  cat(paste(key, value, sep = "\t"), sep = "\n")
+
+con <- file("stdin", open = "r")
+while (length(line <- readLines(con, n = 1, warn = FALSE)) > 0) {
+    input <- split_line(line)
+    doc <- new( "PlainTextDocument", .Data = input$value, DateTimeStamp = Sys.time() )
+    result <- gsub("\n", "\\\\n", paste(Content(fun( doc )), collapse = ""))
+    if(length(result))
+      mapred_write_output(input$key, result)
+}
+close(con)
+
 ', FUN), script)
 }
 
