@@ -73,7 +73,8 @@ DFS_dir_remove <- function( path, recursive = TRUE, henv = hive() ) {
 }
 
 DFS_list <- function( path = ".", henv = hive() ) {
-  .DFS( "-ls", path, henv )
+  splitted <- strsplit(grep(path, hive:::.DFS_intern("-ls", path, henv), value = TRUE), path)
+  sapply(splitted, function(x) basename(x[2]))
 }
 
 DFS_cat <- function( x, henv = hive() ){

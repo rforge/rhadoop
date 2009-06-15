@@ -87,19 +87,30 @@ fun <- %s
 
 split_line <- function(line) {
     val <- unlist(strsplit(line, "\t"))
-    list(key = val[1], value = as.character(val[2]))
+    ## four/three backslashes necessary as we have to write this code to disk. Otherwise backslash n would be interpreted as newline.
+    list(key = val[1], value = unserialize(charToRaw(gsub("\\\\n", "\\\n", val[2], fixed = TRUE))))
 }
+
 mapred_write_output <- function(key, value)
-  cat(paste(key, value, sep = "\t"), sep = "\n")
+    cat(paste(key, gsub("\\\n", "\\\\n", rawToChar(serialize(value, NULL, TRUE)), fixed = TRUE), sep = "\t"), sep = "\\\n")
+
+## very important: hash table for this chunk (necessary to create mapping between part-x and original texts)
+mapping <- new.env()
+chunkname <- paste(paste(sample(c(letters, 0:9), 10, replace = TRUE), collapse = ""), system("hostname", intern = TRUE), sep = "-")
+position <- 1L
 
 con <- file("stdin", open = "r")
-while (length(line <- readLines(con, n = 1, warn = FALSE)) > 0) {
+while (length(line <- readLines(con, n = 1L, warn = FALSE)) > 0) {
     input <- split_line(line)
-    doc <- new( "PlainTextDocument", .Data = input$value, DateTimeStamp = Sys.time() )
-    result <- gsub("\n", "\\\\n", paste(Content(fun( doc )), collapse = ""))
-    if(length(result))
+    
+    result <- fun(input$value)
+    if(length(result)){
+      mapping[[input$key]] <- c(chunk = chunkname, position = position)
+      position <- position + 1L
       mapred_write_output(input$key, result)
+    }
 }
+mapred_write_output(chunkname, mapping)
 close(con)
 
 ', FUN), script)
