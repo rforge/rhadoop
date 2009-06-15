@@ -90,6 +90,16 @@ DFS_tail <- function(file, n = 6L, henv = hive() ){
   out[(len - (n - 1)) : len]
 }
 
+## Note that fs -tail only outputs the last kilobyte!!!
+## for us this is typically not very practical.
+## as long as we have no HDFS C interface:
+DFS_tail_long <- function(file, n = 1L, henv = hive() ){
+  stopifnot( as.integer(n) == 1L )
+  stopifnot( DFS_file_exists(file, henv) )
+  out <- paste(suppressWarnings(.DFS_intern( "-cat", paste(file, " | tail -n", n, sep = ""), henv )), collapse = "" )
+  out
+}
+
 # Load local files into hadoop and distribute them along its nodes
 DFS_put <- function( files, to = ".", henv = hive() ) {
   if(length(files) == 1)
