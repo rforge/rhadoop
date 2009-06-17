@@ -12,24 +12,40 @@
   hive
 }
 
-hive_create <- function(hadoop_home){
-  hive <- .create_hive_from_installation(hadoop_home)
+## TODO: automatically retrieve version number from installation
+hive_create <- function(hadoop_home, version = 0.19){
+  hive <- .create_hive_from_installation(hadoop_home, version)
   class(hive) <- "hive"
   hive
 }
 
-.create_hive_from_installation <- function(hadoop_home){
+.create_hive_from_installation <- function(hadoop_home, version){
   if(!file.exists(hadoop_home))
     stop(sprintf("There is no directory '%s'.", hadoop_home))
   hive <- new.env()
-  local({
-      hadoop <- file.path(hadoop_home, "bin", "hadoop")
-      stopifnot(file.exists(hadoop))
-      configuration <- list(hadoop_default = get_hadoop_config("default", hadoop_home),
-                            hadoop_site = get_hadoop_config("site", hadoop_home),
-                            slaves = readLines(file.path(hadoop_home, "conf", "slaves")),
-                            masters = readLines(file.path(hadoop_home, "conf", "masters")))
-    }, hive)
+  if(version <= 0.19){
+      local({
+          hadoop <- file.path(hadoop_home, "bin", "hadoop")
+          stopifnot(file.exists(hadoop))
+          configuration <- list(hadoop_default = get_hadoop_config("hadoop-default.xml", file.path(hadoop_home, "conf")),
+                                hadoop_site = get_hadoop_config("hadoop-site.xml", file.path(hadoop_home, "conf")),
+                                slaves = readLines(file.path(hadoop_home, "conf", "slaves")),
+                                masters = readLines(file.path(hadoop_home, "conf", "masters")))
+      }, hive)
+  } else {
+      local({
+          hadoop <- file.path(hadoop_home, "bin", "hadoop")
+          stopifnot(file.exists(hadoop))
+          configuration <- list(core_default = get_hadoop_config("core-default.xml", file.path(hadoop_home, "src/core")),
+                                core_site = get_hadoop_config("core-site.xml", file.path(hadoop_home, "conf")),
+                                hdfs_default = get_hadoop_config("hdfs-default.xml", file.path(hadoop_home, "src/hdfs")),
+                                hdfs_site = get_hadoop_config("hdfs-site.xml", file.path(hadoop_home, "conf")),
+                                mapred_default = get_hadoop_config("mapred-default.xml", file.path(hadoop_home, "src/mapred")),
+                                mapred_site = get_hadoop_config("mapred-site.xml", file.path(hadoop_home, "conf")),
+                                slaves = readLines(file.path(hadoop_home, "conf", "slaves")),
+                                masters = readLines(file.path(hadoop_home, "conf", "masters")))
+      }, hive)
+  }
   hive
 }
 

@@ -11,6 +11,14 @@ hive <- local({
               )
 
 .onLoad <- function(libname, pkgname){
-  hive(.hinit())
+    ## initialize hive environment
+    hive(.hinit())
+    if( is.environment(hive()))
+    {
+        config_dirs <- c(file.path(hadoop_home(hive()), "hadoop-0.20.0-core.jar"), file.path(hadoop_home(hive()), "lib", "commons-logging-1.0.4.jar"))
+        ## add Java support
+        require("rJava")
+        .jpackage(pkgname, morePaths = config_dirs)
+    }
 }
 
