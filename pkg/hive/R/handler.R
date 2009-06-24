@@ -13,7 +13,7 @@
 }
 
 ## TODO: automatically retrieve version number from installation
-hive_create <- function(hadoop_home, version = 0.19){
+hive_create <- function(hadoop_home, version = 0.20){
   hive <- .create_hive_from_installation(hadoop_home, version)
   class(hive) <- "hive"
   hive
