@@ -6,7 +6,6 @@
     mapred_default <- .jnew("org/apache/hadoop/fs/Path", file.path(hive:::hadoop_home(hive()), "src", "mapred", "mapred-default.xml"))
     mapred_site <- .jnew("org/apache/hadoop/fs/Path", file.path(hive:::hadoop_home(hive()), "conf", "mapred-site.xml"))
 
-    
     configuration <- .jnew("org/apache/hadoop/conf/Configuration")
     .jcall(configuration, "V", "addResource", core_default)
     .jcall(configuration, "V", "addResource", core_site)
@@ -16,8 +15,19 @@
     .jcall(configuration, "V", "addResource", mapred_site)
 
     .jcall(configuration, "I", "size")
-    .jcall("org/apache/hadoop/fs/FileSystem", "S", "getName", configuration)
 
-    .jcall("org/apache/hadoop/fs/FileSystem", "Lorg/apache/hadoop/fs/FileSystem;", "get", configuration)
+    configuration$getClassLoader()
+    cl <- .jclassLoader()
+    configuration$setClassLoader(cl)
+    configuration$getClassLoader()
 
-  }
+    hdfs <- .jcall("org/apache/hadoop/fs/FileSystem", "Lorg/apache/hadoop/fs/FileSystem;", "get", configuration)
+    path <- .jnew("org/apache/hadoop/fs/Path", "/tmp/testfile")
+    dos <- hdfs$create(path)
+    dos$writeUTF("Hello World")
+    dos$close()
+
+    dis <- hdfs$open(path)
+    dis$readUTF()
+    dis$close()
+}
