@@ -30,4 +30,7 @@
     dis <- hdfs$open(path)
     dis$readUTF()
     dis$close()
+
+    # E.g., instead of DFS_file_exists
+    hdfs$exists(path)
 }
