@@ -11,14 +11,17 @@
 hive_stream(mapper, reducer, input, output, henv = hive(), ...)
 }
 \arguments{
-  \item{mapper}{a character string pointing to the local mapper script.}
-  \item{reducer}{a character string pointing to the local reducer
-    script. If no reducer script should be used leave empty.}
+  \item{mapper}{a function which is executed on each worker node. The
+    so-called mapper typically maps input key/value pairs to a set of
+    intermediate key/value pairs.}
+  \item{reducer}{a function which is executed on each worker node. The
+    so-called reducer reduces a set of intermediate values which share a
+    key to a smaller set of values. If no reducer is used leave empty.}
   \item{input}{specifies the directory holding the data in the DFS.}
   \item{output}{specifies the output directory in the DFS containing the
     results after the streaming job finished.}
   \item{henv}{Hadoop local environment.}
-  \item{...}{additional args to Hadoop Streaming. Currently not in use.}
+  \item{...}{additional arguments to Hadoop Streaming. Currently not in use.}
 
 }
 \details{
@@ -33,7 +36,7 @@ hive_stream(mapper, reducer, input, output, henv = hive(), ...)
 %}
 \references{
   Apache Hadoop core
-  (\url{http://hadoop.apache.org/core/}).  
+  (\url{http://hadoop.apache.org/core/}).
 }
 
 \author{Stefan Theussl}

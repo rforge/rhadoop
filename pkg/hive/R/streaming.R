@@ -3,6 +3,8 @@
 ## High-level wrapper for hadoop-streaming (MapReduce)
 ## TODO: ncpu argument -> probably via -D mapred.jobtracker.maxtasks.per.job=..
 ## TODO: command env arg in henv ?
+## TODO: what to do with mapper_args, reducer_args?
+## TODO: what if you want more than 1 mapper/reducer?
 hive_stream <- function(mapper, reducer, input, output, henv = hive(),
                         mapper_args = NULL, reducer_args = NULL, cmdenv_arg=NULL) {  
   ## check directories in DFS
@@ -13,13 +15,22 @@ hive_stream <- function(mapper, reducer, input, output, henv = hive(),
   if(missing(reducer)){
     streaming_args <- "mapred.reduce.tasks=0"
     reducer <- NULL
+    reducer_exec <- NULL
   }
 
-  ## check if mapper and reducer scripts exists  
-  stopifnot(file.exists(mapper))
-  if(!is.null(reducer))
-    stopifnot(file.exists(reducer))
-
+  ## TODO: encapsulate in separate function something like "prepare..."
+  ## are the mapper and reducer really functions?
+  .hadoop_check_function_sanity(mapper)
+  ## generate mapper and reducer executables
+  mapper_exec <- .generate_executable(mapper, .get_hadoop_executable(type = "mapper"))
+  ## check if mapper scripts exists  
+  stopifnot(file.exists(mapper_exec))
+  ## now the reducer (if available)
+  if(!is.null(reducer)){
+    .hadoop_check_function_sanity(reducer)
+    reducer_exec <- .generate_executable(reducer, .get_hadoop_executable(type = "reducer"))
+    stopifnot(file.exists(reducer_exec))
+  }
   ## check args
   if(is.null(mapper_args))
     mapper_args <- ""
@@ -28,10 +39,11 @@ hive_stream <- function(mapper, reducer, input, output, henv = hive(),
   if(is.null(cmdenv_arg))
     cmdenv_arg <- ""
 
-  
   ## start hadoop streaming
-  msg <- .hadoop_streaming(mapper, reducer, input, output, mapper_args, reducer_args,
-                           streaming_args, cmdenv_arg, henv)
+  msg <- .hadoop_streaming(mapper_exec, reducer_exec, input, output, mapper_args, reducer_args, streaming_args, cmdenv_arg, henv)
+
+  ## delete temporary created mapper/reducer scripts
+  .hadoop_cleanup(files = c(mapper_exec, reducer_exec))
   invisible(msg)
 }
 
@@ -48,3 +60,37 @@ hive_stream <- function(mapper, reducer, input, output, henv = hive(),
                  mapper_arg, reducer_arg, files, cmdenv_arg),
          intern = TRUE)
 }
+
+## creates the mapper and/or reducer script
+## see TODOs above: should be stored in DFS
+.generate_executable <- function(x, script){
+  foo <- paste(deparse(functionBody(x)), collapse = "\n")
+  ## we use 'Rscript'
+  prefix <- "#!/usr/bin/env Rscript\n"
+  ## write file
+  cat(sprintf("%s%s", prefix, foo), file = script, sep = "\n")
+  ## make file executable
+  status <- system(sprintf("chmod 775 %s", script), ignore.stderr = TRUE)
+  if(status){
+    warning("no executable found!")
+    invisible(FALSE)
+  }
+  invisible(script)
+}
+
+.hadoop_check_function_sanity <- function(x){
+  stopifnot(is.function(x))
+  ## TODO: how many arguments? typically, x has no arguments
+}
+
+.hadoop_cleanup <- function(files){
+  if(all(file.exists(files)))
+    unlink(files)
+}
+
+## temp file
+## TODO: store that one in DFS
+.get_hadoop_executable <- function(type = "mapper"){
+  sprintf("_hadoop_%s_", type)
+}
+
