@@ -1,5 +1,31 @@
 ## Functions related to the Hadoop Distributed File System (HDFS)
 
+add_java_DFS_support <- function(henv){
+  ## add paths to Hadoop configuration files
+  core_default <- .jnew("org/apache/hadoop/fs/Path", file.path(hadoop_home(hive()), "src", "core", "core-default.xml"))
+  core_site <- .jnew("org/apache/hadoop/fs/Path", file.path(hadoop_home(hive()), "conf", "core-site.xml"))
+  hdfs_default <- .jnew("org/apache/hadoop/fs/Path", file.path(hadoop_home(hive()), "src", "hdfs", "hdfs-default.xml"))
+  hdfs_site <- .jnew("org/apache/hadoop/fs/Path", file.path(hadoop_home(hive()), "conf", "hdfs-site.xml"))
+  mapred_default <- .jnew("org/apache/hadoop/fs/Path", file.path(hadoop_home(hive()), "src", "mapred", "mapred-default.xml"))
+  mapred_site <- .jnew("org/apache/hadoop/fs/Path", file.path(hadoop_home(hive()), "conf", "mapred-site.xml"))
+  
+  configuration <- .jnew("org/apache/hadoop/conf/Configuration")
+  .jcall(configuration, "V", "addResource", core_default)
+  .jcall(configuration, "V", "addResource", core_site)
+  .jcall(configuration, "V", "addResource", hdfs_default)
+  .jcall(configuration, "V", "addResource", hdfs_site)
+  .jcall(configuration, "V", "addResource", mapred_default)
+  .jcall(configuration, "V", "addResource", mapred_site)
+
+  jcl <- .jclassLoader()
+  configuration$setClassLoader(jcl)
+  
+  assign("configuration", configuration, henv)
+  
+  invisible(TRUE)
+}
+
+
 ## use with caution
 ## FIXME: not working yet, too dangerous
 DFS_format <- function(henv){

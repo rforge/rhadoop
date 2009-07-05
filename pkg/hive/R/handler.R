@@ -13,19 +13,24 @@
 }
 
 ## TODO: automatically retrieve version number from installation
-hive_create <- function(hadoop_home, version = 0.20){
+hive_create <- function( hadoop_home, version = 0.20 ){
   hive <- .create_hive_from_installation(hadoop_home, version)
   class(hive) <- "hive"
   hive
 }
 
-.create_hive_from_installation <- function(hadoop_home, version){
+## given a pointer to a Hadoop installation this function creates an environment
+## containing all information about the Hadoop cluster
+.create_hive_from_installation <- function( hadoop_home ){
   if(!file.exists(hadoop_home))
     stop(sprintf("There is no directory '%s'.", hadoop_home))
   hive <- new.env()
-  if(version <= 0.19){
+  hvers <- hadoop_get_version(hadoop_home)
+  ## config files are split and located in different places since version 0.20.0
+  if(hvers < "0.20.0"){
       local({
           hadoop <- file.path(hadoop_home, "bin", "hadoop")
+          version <- hvers
           stopifnot(file.exists(hadoop))
           configuration <- list(hadoop_default = get_hadoop_config("hadoop-default.xml", file.path(hadoop_home, "conf")),
                                 hadoop_site = get_hadoop_config("hadoop-site.xml", file.path(hadoop_home, "conf")),
@@ -35,6 +40,7 @@ hive_create <- function(hadoop_home, version = 0.20){
   } else {
       local({
           hadoop <- file.path(hadoop_home, "bin", "hadoop")
+          version <- hvers
           stopifnot(file.exists(hadoop))
           configuration <- list(core_default = get_hadoop_config("core-default.xml", file.path(hadoop_home, "src/core")),
                                 core_site = get_hadoop_config("core-site.xml", file.path(hadoop_home, "conf")),
@@ -94,6 +100,14 @@ hadoop <- function(henv)
 hadoop_home <- function(henv)
   get("hadoop_home", henv)
 
+hadoop_version <- function(henv)
+  get("hadoop_version", henv)
+
+hadoop_get_version <- function(hadoop_home){
+  version <- readLines(file.path(hadoop_home, "contrib", "hod", "bin", "VERSION"))
+  version
+}
+                   
 hadoop_framework_control <- function(action, henv){
   system(file.path(hadoop_home(henv), "bin", sprintf("%s-all.sh", action)), intern = TRUE)
 }

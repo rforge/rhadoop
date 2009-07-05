@@ -15,10 +15,13 @@ hive <- local({
     hive(.hinit())
     if( is.environment(hive()))
     {
-        config_dirs <- c(file.path(hadoop_home(hive()), "hadoop-0.20.0-core.jar"),
+        config_dirs <- c(file.path(hadoop_home(hive()), sprintf("hadoop-%s-core.jar", hadoop_version(hive()))),
                          file.path(hadoop_home(hive()), "lib", "commons-logging-1.0.4.jar"))
         ## add Java support
-        .jpackage(pkgname, morePaths = config_dirs, lib.loc = libname)
+        if(.jpackage(pkgname, morePaths = config_dirs, lib.loc = libname)){
+          add_java_DFS_support(henv = hive())
+          
+        }
     }
 }
 
