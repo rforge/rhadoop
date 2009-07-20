@@ -1,31 +1,5 @@
 ## Functions related to the Hadoop Distributed File System (HDFS)
 
-add_java_DFS_support <- function(henv){
-  ## add paths to Hadoop configuration files
-  core_default <- .jnew("org/apache/hadoop/fs/Path", file.path(hadoop_home(hive()), "src", "core", "core-default.xml"))
-  core_site <- .jnew("org/apache/hadoop/fs/Path", file.path(hadoop_home(hive()), "conf", "core-site.xml"))
-  hdfs_default <- .jnew("org/apache/hadoop/fs/Path", file.path(hadoop_home(hive()), "src", "hdfs", "hdfs-default.xml"))
-  hdfs_site <- .jnew("org/apache/hadoop/fs/Path", file.path(hadoop_home(hive()), "conf", "hdfs-site.xml"))
-  mapred_default <- .jnew("org/apache/hadoop/fs/Path", file.path(hadoop_home(hive()), "src", "mapred", "mapred-default.xml"))
-  mapred_site <- .jnew("org/apache/hadoop/fs/Path", file.path(hadoop_home(hive()), "conf", "mapred-site.xml"))
-  
-  configuration <- .jnew("org/apache/hadoop/conf/Configuration")
-  .jcall(configuration, "V", "addResource", core_default)
-  .jcall(configuration, "V", "addResource", core_site)
-  .jcall(configuration, "V", "addResource", hdfs_default)
-  .jcall(configuration, "V", "addResource", hdfs_site)
-  .jcall(configuration, "V", "addResource", mapred_default)
-  .jcall(configuration, "V", "addResource", mapred_site)
-
-  jcl <- .jclassLoader()
-  configuration$setClassLoader(jcl)
-  
-  assign("configuration", configuration, henv)
-  
-  invisible(TRUE)
-}
-
-
 ## use with caution
 ## FIXME: not working yet, too dangerous
 DFS_format <- function(henv){
@@ -97,6 +71,24 @@ DFS_dir_remove <- function( path, recursive = TRUE, henv = hive() ) {
     FALSE
   }
 }
+
+## private int ls(String srcf, boolean recursive) throws IOException {
+##    Path srcPath = new Path(srcf);
+##    FileSystem srcFs = srcPath.getFileSystem(this.getConf());
+##    FileStatus[] srcs = srcFs.globStatus(srcPath);
+##    if (srcs==null || srcs.length==0) {
+##      throw new FileNotFoundException("Cannot access " + srcf + 
+##          ": No such file or directory.");
+##    }
+## 
+##    boolean printHeader = (srcs.length == 1) ? true: false;
+##    int numOfErrors = 0;
+##    for(int i=0; i<srcs.length; i++) {
+##      numOfErrors += ls(srcs[i], srcFs, recursive, printHeader);
+##    }
+##    return numOfErrors == 0 ? 0 : -1;
+##  }
+
 
 DFS_list <- function( path = ".", henv = hive() ) {
   splitted <- strsplit(grep(path, hive:::.DFS_intern("-ls", path, henv), value = TRUE), path)
@@ -215,4 +207,11 @@ hive_get_results <- function(path, henv = hive()){
   out <- values
   names(out) <- keys
   out
+}
+
+HDFS <- function(henv = hive()){
+  hdfs <- tryCatch(get("hdfs", henv), error = identity)
+  if(inherits(hdfs, "error"))
+    hdfs <- NA
+  hdfs
 }

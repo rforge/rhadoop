@@ -12,14 +12,13 @@
   hive
 }
 
-## TODO: automatically retrieve version number from installation
-hive_create <- function( hadoop_home, version = 0.20 ){
-  hive <- .create_hive_from_installation(hadoop_home, version)
+hive_create <- function( hadoop_home ){
+  hive <- .create_hive_from_installation(hadoop_home)
   class(hive) <- "hive"
   hive
 }
 
-## given a pointer to a Hadoop installation this function creates an environment
+## given a pointer to a Hadoop installation directory, this function creates an environment
 ## containing all information about the Hadoop cluster
 .create_hive_from_installation <- function( hadoop_home ){
   if(!file.exists(hadoop_home))
@@ -72,11 +71,16 @@ hive_start <- function(henv = hive()){
   if(hive_is_available(henv))
     return(invisible(TRUE))
   hadoop_framework_control("start", henv)
+
+  ## if there are problems starting hive, close it down 
   if(!hive_is_available(henv)){
     # writeLines(msg)
     hive_stop(henv)
   }
-  invisible(hive_is_available(henv))
+  else {
+    add_java_DFS_support(henv = hive())
+  }
+  invisible(TRUE)
 }
 
 hive_stop <- function(henv = hive()){
@@ -101,13 +105,14 @@ hadoop_home <- function(henv)
   get("hadoop_home", henv)
 
 hadoop_version <- function(henv)
-  get("hadoop_version", henv)
+  get("version", henv)
 
 hadoop_get_version <- function(hadoop_home){
   version <- readLines(file.path(hadoop_home, "contrib", "hod", "bin", "VERSION"))
   version
 }
                    
-hadoop_framework_control <- function(action, henv){
+hadoop_framework_control <- function(action = c("start", "stop"), henv){
+  action <- match.arg(action)
   system(file.path(hadoop_home(henv), "bin", sprintf("%s-all.sh", action)), intern = TRUE)
 }
