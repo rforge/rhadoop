@@ -46,5 +46,6 @@ add_java_DFS_support <- function(henv){
     dis$close()
 
     # E.g., instead of DFS_file_exists
+    # java api
     hdfs$exists(path)
 }

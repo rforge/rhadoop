@@ -1,5 +1,6 @@
 \name{DFS}
 \alias{DFS_cat}
+\alias{DFS_delete}
 \alias{DFS_dir_create}
 \alias{DFS_dir_exists}
 \alias{DFS_dir_remove}
@@ -19,6 +20,7 @@
 }
 \usage{
 DFS_cat( file, con = stdout(), henv = hive() )
+DFS_delete( file, recursive = FALSE, henv = hive() )
 DFS_dir_create( path, henv = hive() )
 DFS_dir_exists( path, henv = hive() )
 DFS_dir_remove( path, recursive = TRUE, henv = hive() )

@@ -20,7 +20,7 @@ hive <- local({
         ## add general Java support
         if(.jpackage(pkgname, morePaths = config_dirs, lib.loc = libname)){
           ## if hive is already started add DFS support via Java
-          if(hive_is_available(hive()))
+          if(hive_is_valid(hive()))
             add_java_DFS_support(henv = hive())
         }
     }

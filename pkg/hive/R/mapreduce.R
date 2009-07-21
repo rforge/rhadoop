@@ -1,5 +1,22 @@
 # Author: Ingo Feinerer, Stefan Theussl
 
+# Fetch distributed files and return them as character vector
+# provided that the results are in key, value pair format (should we check?)
+
+hive_get_results <- function(path, henv = hive()){
+  split_line <- function(line) {
+    val <- unlist(strsplit(line, "\t"))
+    list(key = val[1], value = as.integer(val[2]))
+  }
+  lines <- system(sprintf("%s fs -cat %s/part-*", hadoop(henv), path), intern = TRUE)
+  splitted <- sapply(lines, split_line)
+  keys <- unlist(splitted[1, ])
+  values <- unlist(splitted[2, ])
+  out <- values
+  names(out) <- keys
+  out
+}
+
 ## MAPPERS
 
 ## all mappers available have to be listed here

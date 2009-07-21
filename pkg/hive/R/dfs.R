@@ -1,4 +1,5 @@
 ## Functions related to the Hadoop Distributed File System (HDFS)
+## Author: Stefan Theussl
 
 ## use with caution
 ## FIXME: not working yet, too dangerous
@@ -18,59 +19,73 @@ rm -rf %s-*' ", machine, DFS_root, DFS_root)
   system(sprintf("%s namenode -format", hadoop(henv)))
 }
 
-## out of simplicity queries status of / in DFS 
+## out of simplicity queries status of / in DFS (Java)
 DFS_is_available <- function( henv = hive() ) {
-  msg <- .DFS_intern( "-stat", "/", henv )
-  if( length(msg) )
-    return( TRUE )
-  FALSE
+  stat <- .DFS_stat( "/", henv )
+  if( is.null(stat) )
+    return( FALSE )
+  TRUE
 }
 
-## does file exist in DFS?
+## does file exist in DFS? (Java)
 DFS_file_exists <- function( file, henv = hive() ) {
-  status <- .DFS("-test -e", file, henv )
-  if( status )
-    return( FALSE )
-  TRUE
+  hdfs <- HDFS(henv)
+  hdfs$exists(HDFS_path(file))
 }
 
-## does dir exist in DFS?
+## does dir exist in DFS? (Java)
 DFS_dir_exists <- function( path, henv = hive() ) {
-  status <- .DFS( "-test -d", path, henv )
-  if( status )
-    return( FALSE )
-  TRUE
+  status <- .DFS_test(path, henv )
+  if(is.null(status))
+    return(FALSE)
+  status$isDir()
 }
 
-## create dir in DFS
+## create dir in DFS (Java)
+## TODO: throws getClass error although function calls work in global env
+## interestingly, when debugging and calling DFS_mkdir() twice it works ...
 DFS_dir_create <- function( path, henv = hive() ) {
   if( DFS_dir_exists(path, henv) ) {
-    warning( sprintf("Directory '%s' already exists.", path) )
+    warning( sprintf("directory '%s' already exists.", path) )
     return( invisible(FALSE) )
   }
-  status <- .DFS( "-mkdir", path, henv )
-  if( status ) {
-    warning( sprintf("Cannot create dir '%s'.", path) )
+  if( DFS_file_exists(path, henv) ) {
+    warning( sprintf("'%s' already exists but is not a directory", path) )
+    return( invisible(FALSE) )
+  }
+  status <- .DFS_mkdir( path, henv )
+  if( is.null(status) ) {
+    warning( sprintf("cannot create dir '%s'.", path) )
     return( invisible(FALSE) )
   }
   invisible( TRUE )
 }
 
-# Delete repository
-DFS_dir_remove <- function( path, recursive = TRUE, henv = hive() ) {
-  if( DFS_dir_exists(path, henv) ){
-    status <- .DFS( "-rmr", path, henv )
-    if(status){
-      warning(sprintf("Cannot remove dir '%s'.", path))
-      return(invisible(FALSE))
-    }
-    TRUE
+## Delete files in DFS (Java)
+DFS_delete <- function( file, recursive = FALSE, henv = hive() ) {
+  if( DFS_dir_exists(file, henv) && !recursive){
+    warning(sprintf("cannot remove directory '%s'. Use 'recursive = TRUE' instead.", file))
+    return(FALSE)
   }
-  else {
-    warning(sprintf("There is no dir '%s'.", path))
+  
+  status <- .DFS_delete( file, henv )
+  if(!status){
+    warning(sprintf("cannot remove file '%s'.", file))
+    return(FALSE)
+  }
+  TRUE
+}
+
+DFS_dir_remove <- function(path, recursive = TRUE, henv = hive()){
+  if( DFS_dir_exists(path, henv) ){
+    DFS_delete(path, recursive, henv)
+    TRUE
+  } else {
+    warning(sprintf("'%s' is not a directory.", path))
     FALSE
   }
-}
+} 
+     
 
 ## private int ls(String srcf, boolean recursive) throws IOException {
 ##    Path srcPath = new Path(srcf);
@@ -91,6 +106,12 @@ DFS_dir_remove <- function( path, recursive = TRUE, henv = hive() ) {
 
 
 DFS_list <- function( path = ".", henv = hive() ) {
+  globstat <- .DFS_stat(path, henv)
+  if( is.null(stat) ){
+    warning(sprintf("'%s' is not a readable directory", path))
+    return(character(0))
+  }
+  
   splitted <- strsplit(grep(path, hive:::.DFS_intern("-ls", path, henv), value = TRUE), path)
   sapply(splitted, function(x) basename(x[2]))
 }
@@ -175,6 +196,53 @@ DFS_get_object <- function( file, henv = hive() ) {
   obj
 }
 
+############################################################
+## Java aware routines
+
+## Returns the Hadoop DFS configuration object (Java)
+HDFS <- function(henv = hive()){
+  hdfs <- tryCatch(get("hdfs", henv), error = identity)
+  if(inherits(hdfs, "error"))
+    hdfs <- NA
+  hdfs
+}
+
+## Returns path as Hadoop DFS path object (Java)
+HDFS_path <- function(x)
+  .jnew("org/apache/hadoop/fs/Path", x)
+
+## deletes a file or empty directory
+## returns TRUE if successful and FALSE otherwise
+## caution: always deletes recursively!
+.DFS_delete <- function(x, henv){
+   hdfs <- HDFS(henv)
+   hdfs$delete(HDFS_path(x))
+}
+
+## creates directory on DFS
+## returns TRUE if successful and NULL otherwise
+.DFS_mkdir <- function(x, henv){
+  hdfs <- HDFS(henv)
+  hdfs$mkdirs(HDFS_path(x))
+}
+
+.DFS_stat <- function(x, henv){
+  hdfs <- HDFS(henv)
+  stat <- hdfs$globStatus(HDFS_path(x))
+  if(is.null(stat))
+    warning(sprintf("cannot stat '%s': No such file or directory", x))
+  stat
+}
+
+.DFS_test <- function(x, henv){
+  hdfs <- HDFS(henv)
+  hdfs$getFileStatus(HDFS_path(x))
+}
+
+############################################################
+## Old command line wrappers
+## FIXME: all of them have to be replaced by Java routines
+
 .DFS <- function( cmd, args, henv )
   system( .DFS_create_command(cmd, args, henv), ignore.stderr = TRUE )
 
@@ -190,28 +258,3 @@ DFS_get_object <- function( file, henv = hive() ) {
 
 .DFS_create_command <- function( cmd, args, henv )
   sprintf("%s fs %s %s", hadoop(henv), cmd, args)
-
-
-# Fetch distributed files and return them as character vector
-# provided that the results are in key, value pair format (should we check?)
-
-hive_get_results <- function(path, henv = hive()){
-  split_line <- function(line) {
-    val <- unlist(strsplit(line, "\t"))
-    list(key = val[1], value = as.integer(val[2]))
-  }
-  lines <- system(sprintf("%s fs -cat %s/part-*", hadoop(henv), path), intern = TRUE)
-  splitted <- sapply(lines, split_line)
-  keys <- unlist(splitted[1, ])
-  values <- unlist(splitted[2, ])
-  out <- values
-  names(out) <- keys
-  out
-}
-
-HDFS <- function(henv = hive()){
-  hdfs <- tryCatch(get("hdfs", henv), error = identity)
-  if(inherits(hdfs, "error"))
-    hdfs <- NA
-  hdfs
-}

@@ -8,6 +8,7 @@ export(## the hive
        "hive_is_available",
        ## DFS wrappers
        "DFS_cat",
+       "DFS_delete",
        "DFS_dir_create",
        "DFS_dir_exists",
        "DFS_dir_remove",
