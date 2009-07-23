@@ -31,7 +31,7 @@ hive_create <- function( hadoop_home ){
           hadoop <- file.path(hadoop_home, "bin", "hadoop")
           version <- hvers
           stopifnot(file.exists(hadoop))
-          configuration <- list(hadoop_default = get_hadoop_config("hadoop-default.xml", file.path(hadoop_home, "conf")),
+          config_files <- list(hadoop_default = get_hadoop_config("hadoop-default.xml", file.path(hadoop_home, "conf")),
                                 hadoop_site = get_hadoop_config("hadoop-site.xml", file.path(hadoop_home, "conf")),
                                 slaves = readLines(file.path(hadoop_home, "conf", "slaves")),
                                 masters = readLines(file.path(hadoop_home, "conf", "masters")))
@@ -41,7 +41,7 @@ hive_create <- function( hadoop_home ){
           hadoop <- file.path(hadoop_home, "bin", "hadoop")
           version <- hvers
           stopifnot(file.exists(hadoop))
-          configuration <- list(core_default = get_hadoop_config("core-default.xml", file.path(hadoop_home, "src/core")),
+          config_files <- list(core_default = get_hadoop_config("core-default.xml", file.path(hadoop_home, "src/core")),
                                 core_site = get_hadoop_config("core-site.xml", file.path(hadoop_home, "conf")),
                                 hdfs_default = get_hadoop_config("hdfs-default.xml", file.path(hadoop_home, "src/hdfs")),
                                 hdfs_site = get_hadoop_config("hdfs-site.xml", file.path(hadoop_home, "conf")),
@@ -72,10 +72,10 @@ hive_start <- function(henv = hive()){
     return(invisible(TRUE))
   hadoop_framework_control("start", henv)
 
-  ## if there are problems starting hive, close it down 
+  ## if there are problems starting hive, close it
   if(!hive_is_available(henv)){
     # writeLines(msg)
-    hive_stop(henv)
+    suppressWarnings(hive_stop(henv))
   }
   else {
     add_java_DFS_support(henv = hive())
@@ -87,14 +87,14 @@ hive_stop <- function(henv = hive()){
   if(hive_is_available(henv))
     hadoop_framework_control("stop", henv)
   else
-    warning("Hadoop not running. Nothing to stop.")
+    warning("No Hadoop cluster running. Nothing to stop.")
   invisible(TRUE)
 }
 
 ## FIXME: Very simple query of hadoop status. Probably better to use pid?
 hive_is_available <- function(henv = hive()){
   stopifnot(hive_is_valid(henv))
-  DFS_is_available(henv)
+  suppressWarnings(DFS_is_available(henv))
 }
 
 ## internal functions

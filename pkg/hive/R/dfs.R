@@ -21,8 +21,9 @@ rm -rf %s-*' ", machine, DFS_root, DFS_root)
 
 ## out of simplicity queries status of / in DFS (Java)
 DFS_is_available <- function( henv = hive() ) {
+  
   stat <- .DFS_stat( "/", henv )
-  if( is.null(stat) )
+  if( is.null(stat) || is.na(stat) )
     return( FALSE )
   TRUE
 }
@@ -107,7 +108,7 @@ DFS_dir_remove <- function(path, recursive = TRUE, henv = hive()){
 
 DFS_list <- function( path = ".", henv = hive() ) {
   globstat <- .DFS_stat(path, henv)
-  if( is.null(stat) ){
+  if( is.null(globstat) ){
     warning(sprintf("'%s' is not a readable directory", path))
     return(character(0))
   }
@@ -165,7 +166,27 @@ DFS_put_object <- function( obj, file, henv = hive() ) {
   invisible(file)
 }
 
+## worse performance than read_lines2, reason: paste
 DFS_write_lines <- function( text, file, henv = hive(), ... ) {
+  if(DFS_file_exists(file)){
+    warning(sprintf("file '%s' already exists.", file))
+    return(NA)
+  }
+  hdfs <- HDFS(henv)
+  
+  outputstream <- hdfs$create(HDFS_path(file))
+  outputstream$writeUTF(paste(text, collapse = "\n"))
+  outputstream$close()
+
+#  con <- .DFS_pipe( "-put", file, open = "w", henv = henv )
+#  status <- tryCatch( writeLines(text = text, con = con, ...), error = identity )
+#  close.connection(con)
+#  if(inherits(status, "error"))
+#    stop("Cannot write to connection.")
+  invisible(file)
+}
+
+DFS_write_lines2 <- function( text, file, henv = hive(), ... ) {
   con <- .DFS_pipe( "-put", file, open = "w", henv = henv )
   status <- tryCatch( writeLines(text = text, con = con, ...), error = identity )
   close.connection(con)
@@ -174,8 +195,21 @@ DFS_write_lines <- function( text, file, henv = hive(), ... ) {
   invisible(file)
 }
 
-## serialize R object from DFS
 DFS_read_lines <- function( file, n = -1L, henv = hive(), ... ) {
+  if(!DFS_file_exists(file)){
+    warning(sprintf("file '%s' does not exists.", file))
+    return(NA)
+  }
+  hdfs <- HDFS(henv)
+  
+  inputstream <- hdfs$open(hive:::HDFS_path(file))
+  out <- inputstream$readUTF()
+  inputstream$close()
+  out
+}
+
+## serialize R object from DFS (obsolete)
+DFS_read_lines2 <- function( file, n = -1L, henv = hive(), ... ) {
   con <- .DFS_pipe( "-cat", file, open = "r", henv = henv )
   text <- tryCatch( readLines(con = con, n = -1L, ...), error = identity)
   close.connection(con)
@@ -199,11 +233,11 @@ DFS_get_object <- function( file, henv = hive() ) {
 ############################################################
 ## Java aware routines
 
-## Returns the Hadoop DFS configuration object (Java)
+## Returns the Hadoop DFS configuration object (Java) or NULL
 HDFS <- function(henv = hive()){
   hdfs <- tryCatch(get("hdfs", henv), error = identity)
   if(inherits(hdfs, "error"))
-    hdfs <- NA
+    hdfs <- NULL
   hdfs
 }
 
@@ -228,10 +262,18 @@ HDFS_path <- function(x)
 
 .DFS_stat <- function(x, henv){
   hdfs <- HDFS(henv)
+  if(is.null(hdfs)){
+    warning("no HDFS found in Hadoop environment")
+    return(NA)
+  } 
   stat <- hdfs$globStatus(HDFS_path(x))
-  if(is.null(stat))
+  if(is.null(stat)){
     warning(sprintf("cannot stat '%s': No such file or directory", x))
-  stat
+    return(NULL)
+  }
+  ## for the time being return TRUE
+  ## TODO: this should return an R object containing the stat information 
+  TRUE
 }
 
 .DFS_test <- function(x, henv){

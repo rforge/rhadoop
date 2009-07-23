@@ -17,7 +17,7 @@ hive_get_masters <- function(henv = hive()){
 }
 
 .hadoop_configuration <- function(x, henv){
-  get("configuration", henv)[[x]]
+  get("config_files", henv)[[x]]
 }
 
 ## Setters
