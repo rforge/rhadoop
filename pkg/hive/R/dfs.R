@@ -172,17 +172,17 @@ DFS_write_lines <- function( text, file, henv = hive(), ... ) {
     warning(sprintf("file '%s' already exists.", file))
     return(NA)
   }
+
+  if(!length(text))
+    stop("text length of zero not supported.")
+  
   hdfs <- HDFS(henv)
   
   outputstream <- hdfs$create(HDFS_path(file))
-  outputstream$writeUTF(paste(text, collapse = "\n"))
+  for( i in 1:length(text) )
+  outputstream$writeBytes(text[i])
   outputstream$close()
 
-#  con <- .DFS_pipe( "-put", file, open = "w", henv = henv )
-#  status <- tryCatch( writeLines(text = text, con = con, ...), error = identity )
-#  close.connection(con)
-#  if(inherits(status, "error"))
-#    stop("Cannot write to connection.")
   invisible(file)
 }
 
@@ -203,7 +203,8 @@ DFS_read_lines <- function( file, n = -1L, henv = hive(), ... ) {
   hdfs <- HDFS(henv)
   
   inputstream <- hdfs$open(hive:::HDFS_path(file))
-  out <- inputstream$readUTF()
+  for(i in 1:n)
+    out <- inputstream$readLine()
   inputstream$close()
   out
 }
