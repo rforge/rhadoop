@@ -36,8 +36,8 @@ DFS_file_exists <- function( file, henv = hive() ) {
 
 ## does dir exist in DFS? (Java)
 DFS_dir_exists <- function( path, henv = hive() ) {
-  status <- .DFS_test(path, henv )
-  if(is.null(status))
+  status <- tryCatch(.DFS_getFileStatus(path, henv ), error = identity)
+  if(inherits(status, "error"))
     return(FALSE)
   status$isDir()
 }
@@ -179,8 +179,10 @@ DFS_write_lines <- function( text, file, henv = hive(), ... ) {
   hdfs <- HDFS(henv)
   
   outputstream <- hdfs$create(HDFS_path(file))
-  for( i in 1:length(text) )
-  outputstream$writeBytes(text[i])
+  for( i in 1:length(text) ){
+    outputstream$writeBytes(text[i])
+    outputstream$writeBytes("\n")
+  }
   outputstream$close()
 
   invisible(file)
@@ -202,9 +204,20 @@ DFS_read_lines <- function( file, n = -1L, henv = hive(), ... ) {
   }
   hdfs <- HDFS(henv)
   
-  inputstream <- hdfs$open(hive:::HDFS_path(file))
-  for(i in 1:n)
-    out <- inputstream$readLine()
+  inputstream <- hdfs$open(HDFS_path(file))
+  ## FIXME: allocate vector before reading from inputstream
+  out <- character()
+  if( n <= 0 ){
+    i <- 1
+    while( (! is.null(input))  ){
+      input <- inputstream$readLine()
+      out <- c(out, input)
+      i <- i + 1
+    }
+  }
+  else
+    for(i in 1:n)
+      out[i] <- inputstream$readLine()
   inputstream$close()
   out
 }
@@ -277,7 +290,7 @@ HDFS_path <- function(x)
   TRUE
 }
 
-.DFS_test <- function(x, henv){
+.DFS_getFileStatus <- function(x, henv){
   hdfs <- HDFS(henv)
   hdfs$getFileStatus(HDFS_path(x))
 }
