@@ -125,9 +125,35 @@ DFS_cat <- function( x, henv = hive() ){
 DFS_tail <- function(file, n = 6L, henv = hive() ){
   stopifnot( as.integer(n) > 0L )
   stopifnot( DFS_file_exists(file, henv) )
-  out <- .DFS_intern( "-tail", file, henv )
+  out <- .DFS_tail(file, henv = henv)
   len <- length(out)
   out[(len - (n - 1)) : len]
+}
+
+.DFS_tail <- function(file, size = 1024, henv = hive()){
+  hdfs <- HDFS(henv)
+  ioutils <- IOUTILS(henv)
+  
+  hdfs_file <- HDFS_path(file)
+  len <- hdfs$getFileStatus(hdfs_file)$getLen()
+  offset <- ifelse(len > size, len - size, 0)
+
+
+  inputstream <- hdfs$open(hdfs_file)
+  inputstream$seek(.jlong(offset))
+
+  ## we need to copy the contents of the file to an output stream
+  ## Thus, for the time being we use the JRI class to RConsoleOutputStream divert
+  ## the outputstream to the R console
+  routput <- .jnew("org/rosuda/JRI/RConsoleOutputStream", .jengine(TRUE), as.integer(0))
+  ## now we need to capture the contents from the console usingg a text connection
+  ## we save the results in the object out
+  con <- textConnection("out", open = "w")
+  sink(file = con)
+  ioutils$copyBytes(inputstream, routput, as.integer(1024), TRUE)
+  sink()
+  close(con)
+  out
 }
 
 ## Note that fs -tail only outputs the last kilobyte!!!
@@ -179,6 +205,7 @@ DFS_write_lines <- function( text, file, henv = hive(), ... ) {
   hdfs <- HDFS(henv)
   
   outputstream <- hdfs$create(HDFS_path(file))
+#  outputstream$write(text)
   for( i in 1:length(text) ){
     outputstream$writeBytes(text[i])
     outputstream$writeBytes("\n")
@@ -234,6 +261,33 @@ DFS_read_lines2 <- function( file, n = -1L, henv = hive(), ... ) {
   text
 }
 
+DFS_read_lines3 <- function( file, n = -1L, henv = hive(), ... ) {
+  if(!DFS_file_exists(file)){
+    warning(sprintf("file '%s' does not exists.", file))
+    return(NA)
+  }
+  hdfs <- HDFS(henv)
+  ioutils <- IOUTILS(henv)
+  offset <- 0
+  inputstream <- hdfs$open(HDFS_path(file))
+  inputstream$seek(.jlong(offset))
+
+  ## we need to copy the contents of the file to an output stream
+  ## Thus, for the time being we use the JRI class to RConsoleOutputStream divert
+  ## the outputstream to the R console
+  routput <- .jnew("org/rosuda/JRI/RConsoleOutputStream", .jengine(TRUE), as.integer(0))
+  ## now we need to capture the contents from the console usingg a text connection
+  ## we save the results in the object out
+  con <- textConnection("out", open = "w")
+  sink(file = con)
+  ioutils$copyBytes(inputstream, routput, as.integer(1024), TRUE)
+  sink()
+  close(con)
+
+  #inputstream$close()
+  out
+}
+
 ## serialize R object from DFS
 DFS_get_object <- function( file, henv = hive() ) {
   con <- .DFS_pipe( "-cat", file, open = "r", henv = henv )
@@ -243,21 +297,6 @@ DFS_get_object <- function( file, henv = hive() ) {
      return(NA)
   obj
 }
-
-############################################################
-## Java aware routines
-
-## Returns the Hadoop DFS configuration object (Java) or NULL
-HDFS <- function(henv = hive()){
-  hdfs <- tryCatch(get("hdfs", henv), error = identity)
-  if(inherits(hdfs, "error"))
-    hdfs <- NULL
-  hdfs
-}
-
-## Returns path as Hadoop DFS path object (Java)
-HDFS_path <- function(x)
-  .jnew("org/apache/hadoop/fs/Path", x)
 
 ## deletes a file or empty directory
 ## returns TRUE if successful and FALSE otherwise

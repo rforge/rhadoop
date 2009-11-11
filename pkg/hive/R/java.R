@@ -21,10 +21,12 @@ add_java_DFS_support <- function(henv){
 
   ## create hdfs handler
   hdfs <- .jcall("org/apache/hadoop/fs/FileSystem", "Lorg/apache/hadoop/fs/FileSystem;", "get", configuration)
-
+  ## ioutils class
+  ioutils <- .jnew("org/apache/hadoop/io/IOUtils")
   ## store everything in hadoop environment
   assign("configuration", configuration, henv)
   assign("hdfs", hdfs, henv)
+  assign("ioutils", ioutils, henv)
   
   invisible(TRUE)
 }
@@ -48,4 +50,26 @@ add_java_DFS_support <- function(henv){
     # E.g., instead of DFS_file_exists
     # java api
     hdfs$exists(path)
+}
+
+############################################################
+## henv Extractors
+
+## Returns the Hadoop DFS configuration object (Java) or NULL
+HDFS <- function(henv = hive()){
+  hdfs <- tryCatch(get("hdfs", henv), error = identity)
+  if(inherits(hdfs, "error"))
+    hdfs <- NULL
+  hdfs
+}
+
+## Returns path as Hadoop DFS path object (Java)
+HDFS_path <- function(x)
+  .jnew("org/apache/hadoop/fs/Path", x)
+
+IOUTILS <- function(henv = hive()){
+  ioutils <- tryCatch(get("ioutils", henv), error = identity)
+  if(inherits(ioutils, "error"))
+    ioutils <- NULL
+  ioutils
 }
