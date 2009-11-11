@@ -1,0 +1,10 @@
+Package: tm.plugin.dc
+Version: 0.0-1
+Date: 2009-11-11
+Title: Text Mining Distributed Corpus Plug-In
+Description: A plug-in for the text mining framework to support distributed 
+             text mining using Hadoop InteractiVE (hive). 
+Author: Ingo Feinerer and Stefan Theussl
+Maintainer: Stefan Theussl <Stefan.Theussl@wu.ac.at>
+License: GPL-3
+Depends: hive, tm (>= 0.5)
