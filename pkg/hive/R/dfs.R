@@ -224,6 +224,7 @@ DFS_write_lines2 <- function( text, file, henv = hive(), ... ) {
   invisible(file)
 }
 
+## TODO: DFS_read_lines3 should become the default -> a lot more efficient
 DFS_read_lines <- function( file, n = -1L, henv = hive(), ... ) {
   if(!DFS_file_exists(file)){
     warning(sprintf("file '%s' does not exists.", file))
@@ -247,18 +248,6 @@ DFS_read_lines <- function( file, n = -1L, henv = hive(), ... ) {
       out[i] <- inputstream$readLine()
   inputstream$close()
   out
-}
-
-## serialize R object from DFS (obsolete)
-DFS_read_lines2 <- function( file, n = -1L, henv = hive(), ... ) {
-  con <- .DFS_pipe( "-cat", file, open = "r", henv = henv )
-  text <- tryCatch( readLines(con = con, n = -1L, ...), error = identity)
-  close.connection(con)
-  if(inherits(text, "error"))
-     return(NA)
-  if(n > 0L)
-    return(text[1L:n])
-  text
 }
 
 DFS_read_lines3 <- function( file, n = -1L, henv = hive(), ... ) {

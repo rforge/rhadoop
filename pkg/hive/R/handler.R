@@ -115,7 +115,7 @@ hadoop <- function( henv )
   get( "hadoop", henv )
 
 hadoop_home <- function( henv )
-  get(" hadoop_home", henv )
+  get( "hadoop_home", henv )
 
 hadoop_version <- function( henv )
   get( "version", henv )

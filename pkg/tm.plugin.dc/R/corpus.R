@@ -93,7 +93,7 @@ print.DistributedCorpus <- function(x, ...) {
 `[[.DistributedCorpus` <- function(x, i) {
     ## TODO: what if there are more than 1 chunk
     current_map <- attr(x, "Mapping")[[attr(x, "ActiveRevision")]][[ Keys(x)[i] ]]
-    object <- DFS_read_lines( file.path(attr(x, "ActiveRevision"), attr(x, "Chunks")[[ attr(x, "ActiveRevision") ]] [ current_map["chunk"] ]),
+    object <- hive:::DFS_read_lines3( file.path(attr(x, "ActiveRevision"), attr(x, "Chunks")[[ attr(x, "ActiveRevision") ]] [ current_map["chunk"] ]),
                              henv = hive() )[ current_map["position"] ]
     value <- strsplit(object, "\t")[[1]][2]
 
@@ -112,11 +112,15 @@ Keys <- function(x) attr(x, "Keys")
 tm_map.DistributedCorpus <- function(x, FUN, ..., cmdenv_arg = NULL, useMeta = FALSE, lazy = FALSE) {
     rev <- tempfile()
     cmdenv_arg <- c(cmdenv_arg, sprintf("_HIVE_FUNCTION_TO_APPLY_=%s", as.character(substitute(FUN))))
-                    
+    ## start the streaming job
     hive_stream(.generate_tm_mapper(), #hive:::hadoop_generate_mapper("tm", deparse(substitute(FUN))),
                 input = attr(x, "ActiveRevision"), output = rev,
                 cmdenv_arg = cmdenv_arg)
+    ## in case the streaming job failed to create output directory return an error
+    stopifnot(DFS_dir_exists(rev))
+    ## add new revision to corpus meta info
     attr(x, "Revisions") <- c(attr(x, "Revisions"), rev)
+    ## update ActiveRevision in dc
     x <- updateRevision(x, rev)
     x
 }

@@ -1,0 +1,7 @@
+* query a item which is non-existent
+
+> dc[[21579]]
+Error in .jnew("org/apache/hadoop/fs/Path", x) : 
+  java.lang.NoSuchMethodError: <init>
+
+should give NULL, NA, or subscript out of bounds error!
