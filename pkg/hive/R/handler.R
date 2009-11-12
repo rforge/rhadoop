@@ -1,10 +1,10 @@
 ## Handling the Hadoop framework
 
-## .hinit() initializes the Hadoop framework and returns the corresponding environment
+## .hinit() initializes the Hadoop framework and returns the corresponding environment.
 .hinit <- function( hadoop_home ) {
   if( missing(hadoop_home) )
-    hadoop_home <- Sys.getenv("HADOOP_HOME")
-  tmp <- tryCatch(hive_create(hadoop_home), error = identity )
+    hadoop_home <- Sys.getenv( "HADOOP_HOME" )
+  tmp <- tryCatch( hive_create(hadoop_home), error = identity )
   hive <- if( inherits(tmp, "error") )
     .hive_default_env()
   else
@@ -12,22 +12,26 @@
   hive
 }
 
+## See also .create_hive_from_installation.
+## Returns on object of class 'hive'.
 hive_create <- function( hadoop_home ){
-  hive <- .create_hive_from_installation(hadoop_home)
-  class(hive) <- "hive"
+  hive <- .create_hive_from_installation( hadoop_home )
+  class( hive ) <- "hive"
   hive
 }
 
-## given a pointer to a Hadoop installation directory, this function creates an environment
-## containing all information about the Hadoop cluster
+## Given a pointer to a Hadoop installation directory, this function creates an environment
+## containing all information about the Hadoop cluster.
+## We store the hadoop home directory, the hadoop version, and the parsed configuration files
+## in a separate R environment.
 .create_hive_from_installation <- function( hadoop_home ){
-  if(!file.exists(hadoop_home))
-    stop(sprintf("There is no directory '%s'.", hadoop_home))
+  if( !file.exists(hadoop_home) )
+    stop( sprintf("There is no directory '%s'.", hadoop_home) )
   hive <- new.env()
-  hvers <- hadoop_get_version(hadoop_home)
+  hvers <- hadoop_get_version( hadoop_home )
   ## config files are split and located in different places since version 0.20.0
-  if(hvers < "0.20.0"){
-      local({
+  if( hvers < "0.20.0" ){
+      local( {
           hadoop <- file.path(hadoop_home, "bin", "hadoop")
           version <- hvers
           stopifnot(file.exists(hadoop))
@@ -35,9 +39,9 @@ hive_create <- function( hadoop_home ){
                                 hadoop_site = get_hadoop_config("hadoop-site.xml", file.path(hadoop_home, "conf")),
                                 slaves = readLines(file.path(hadoop_home, "conf", "slaves")),
                                 masters = readLines(file.path(hadoop_home, "conf", "masters")))
-      }, hive)
+      }, hive )
   } else {
-      local({
+      local( {
           hadoop <- file.path(hadoop_home, "bin", "hadoop")
           version <- hvers
           stopifnot(file.exists(hadoop))
@@ -49,70 +53,82 @@ hive_create <- function( hadoop_home ){
                                 mapred_site = get_hadoop_config("mapred-site.xml", file.path(hadoop_home, "conf")),
                                 slaves = readLines(file.path(hadoop_home, "conf", "slaves")),
                                 masters = readLines(file.path(hadoop_home, "conf", "masters")))
-      }, hive)
+      }, hive )
   }
   hive
 }
 
-## Default Environment: not available
+## Default environment: NA
 .hive_default_env <- function(){
   NA
 }
 
-hive_is_valid <- function(henv){
+## Checks if henv inherits from class 'hive'
+hive_is_valid <- function( henv ){
   inherits(henv, "hive")
 }
 
-print.hive <- function(x, ...){
-  writeLines("Hadoop Environment")
+## Provides information about the "hive"
+print.hive <- function( x, ... ){
+  writeLines( "HIVE: Hadoop Cluster" )
+  writeLines( sprintf("- Hadoop version: %s", hadoop_version(hive(x))) )
+  writeLines( sprintf("- Hadoop home directory: %s", hadoop_home(x)) )
+  writeLines( sprintf("- Namenode: %s", hive_get_masters(x)) )
+  writeLines( sprintf("- Avail. datanodes: %d", length(hive_get_slaves(x))) )  
 }
 
-hive_start <- function(henv = hive()){
-  if(hive_is_available(henv))
-    return(invisible(TRUE))
-  hadoop_framework_control("start", henv)
-
+## Start and stop a Hadoop cluster.
+## NOTE: Java DFS support is only available for the current cluster.
+##       Thus, add/remove DFS support in each call to hive_start/stop
+hive_start <- function( henv = hive() ){
+  if( hive_is_available(henv) )
+    return( invisible(TRUE) )
+  hadoop_framework_control( "start", henv )
+  status <- add_java_DFS_support( henv = hive() )
   ## if there are problems starting hive, close it
-  if(!hive_is_available(henv)){
+  if( !status ){
     # writeLines(msg)
-    suppressWarnings(hive_stop(henv))
+    suppressWarnings( hive_stop(henv) )
+    return( invisible(FALSE) )
   }
-  else {
-    add_java_DFS_support(henv = hive())
-  }
-  invisible(TRUE)
+  invisible( TRUE )
 }
 
-hive_stop <- function(henv = hive()){
-  if(hive_is_available(henv))
-    hadoop_framework_control("stop", henv)
+hive_stop <- function( henv = hive() ){
+  if( hive_is_available(henv) ){
+    remove_java_DFS_support( henv )
+    hadoop_framework_control( "stop", henv )
+  }
   else
-    warning("No Hadoop cluster running. Nothing to stop.")
-  invisible(TRUE)
+    warning( "No Hadoop cluster running. Nothing to stop." )
+  invisible( TRUE )
 }
 
 ## FIXME: Very simple query of hadoop status. Probably better to use pid?
-hive_is_available <- function(henv = hive()){
-  stopifnot(hive_is_valid(henv))
-  suppressWarnings(DFS_is_available(henv))
+hive_is_available <- function( henv = hive() ){
+  stopifnot( hive_is_valid(henv) )
+  suppressWarnings( DFS_is_available(henv) )
 }
 
-## internal functions
-hadoop <- function(henv)
-  get("hadoop", henv)
+## Internal extractor functions
+hadoop <- function( henv )
+  get( "hadoop", henv )
 
-hadoop_home <- function(henv)
-  get("hadoop_home", henv)
+hadoop_home <- function( henv )
+  get(" hadoop_home", henv )
 
-hadoop_version <- function(henv)
-  get("version", henv)
+hadoop_version <- function( henv )
+  get( "version", henv )
 
-hadoop_get_version <- function(hadoop_home){
-  version <- readLines(file.path(hadoop_home, "contrib", "hod", "bin", "VERSION"))
+hadoop_get_version <- function( hadoop_home ){
+  version <- readLines( file.path(hadoop_home, "contrib", "hod", "bin", "VERSION") )
   version
 }
-                   
-hadoop_framework_control <- function(action = c("start", "stop"), henv){
+
+## Controlling the Hadoop framework: currently using the start/stop_all.sh scripts
+## in the $HADOOP_HOME/bin directory
+## FIXME: This may not be platform independent
+hadoop_framework_control <- function( action = c("start", "stop"), henv ){
   action <- match.arg(action)
-  system(file.path(hadoop_home(henv), "bin", sprintf("%s-all.sh", action)), intern = TRUE)
+  system( file.path(hadoop_home(henv), "bin", sprintf("%s-all.sh", action)), intern = TRUE )
 }

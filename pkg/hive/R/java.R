@@ -1,3 +1,7 @@
+############################################################
+## Java DFS support functions
+############################################################
+
 add_java_DFS_support <- function(henv){
   ## add paths to Hadoop configuration files
   core_default <- .jnew("org/apache/hadoop/fs/Path", file.path(hadoop_home(henv), "src", "core", "core-default.xml"))
@@ -31,29 +35,17 @@ add_java_DFS_support <- function(henv){
   invisible(TRUE)
 }
 
-.DFS_java <- function(...) {
-
-    srcPath <- .jnew("org/apache/hadoop/fs/Path", path)
-    ##srcFs <- .jcall("srcPath", "org/apache/hadoop/fs/FileSystem", "getFileSystem", .jcast(hdfs, "org/apache/hadoop/conf/Configuration"))
-    ##FileSystem srcFs = srcPath.getFileSystem(this.getConf());
-
-    srcs <- hdfs$globStatus(srcPath)
-    
-    dos <- hdfs$create(path)
-    dos$writeUTF("Hello World")
-    dos$close()
-
-    dis <- hdfs$open(path)
-    dis$readUTF()
-    dis$close()
-
-    # E.g., instead of DFS_file_exists
-    # java api
-    hdfs$exists(path)
+remove_java_DFS_support <- function(henv){
+  suppressWarnings( rm("configuration", envir = henv) )
+  suppressWarnings( rm("hdfs", envir = henv) )
+  suppressWarnings( rm("ioutils", envir = henv) )
+  invisible(TRUE)
 }
 
+
 ############################################################
-## henv Extractors
+## Extractors
+############################################################
 
 ## Returns the Hadoop DFS configuration object (Java) or NULL
 HDFS <- function(henv = hive()){
@@ -67,6 +59,7 @@ HDFS <- function(henv = hive()){
 HDFS_path <- function(x)
   .jnew("org/apache/hadoop/fs/Path", x)
 
+## returns the ioutils (Java) object
 IOUTILS <- function(henv = hive()){
   ioutils <- tryCatch(get("ioutils", henv), error = identity)
   if(inherits(ioutils, "error"))
