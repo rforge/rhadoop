@@ -144,7 +144,7 @@ updateRevision <- function(corpus, revision){
   attr(corpus, "Chunks") <- c(attr(corpus, "Chunks"), structure(list(chunks), names = revision))
 
   # TODO: Do not use sapply
-  mapping <- sapply(sapply(chunks, function(x) hive:::DFS_tail_long(n = 1, file.path(revision, x), henv = hive())), split_line)
+  mapping <- sapply(sapply(chunks, function(x) DFS_tail(n = 1, file.path(revision, x), size = 8196, henv = hive())), split_line)
 
   hash_table <- new.env()
 

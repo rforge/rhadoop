@@ -122,10 +122,10 @@ DFS_cat <- function( x, henv = hive() ){
   .DFS("-cat", x, henv)
 }
 
-DFS_tail <- function(file, n = 6L, henv = hive() ){
+DFS_tail <- function(file, n = 6L, size = 1024, henv = hive() ){
   stopifnot( as.integer(n) > 0L )
   stopifnot( DFS_file_exists(file, henv) )
-  out <- .DFS_tail(file, henv = henv)
+  out <- .DFS_tail(file, size, henv = henv)
   len <- length(out)
   out[(len - (n - 1)) : len]
 }
@@ -153,16 +153,6 @@ DFS_tail <- function(file, n = 6L, henv = hive() ){
   ioutils$copyBytes(inputstream, routput, as.integer(1024), TRUE)
   sink()
   close(con)
-  out
-}
-
-## Note that fs -tail only outputs the last kilobyte!!!
-## for us this is typically not very practical.
-## as long as we have no HDFS C interface:
-DFS_tail_long <- function(file, n = 1L, henv = hive() ){
-  stopifnot( as.integer(n) == 1L )
-  stopifnot( DFS_file_exists(file, henv) )
-  out <- paste(suppressWarnings(.DFS_intern( "-cat", paste(file, " | tail -n", n, sep = ""), henv )), collapse = "" )
   out
 }
 
