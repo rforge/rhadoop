@@ -1,9 +1,8 @@
 export("DistributedCorpus")
+export("c_TermDocumentMatrix")
 export("setRevision")
 
 S3method("print", "DistributedCorpus")
 S3method("[[", "DistributedCorpus")
-S3method("print", "DistributedCorpus")
 S3method("summary", "DistributedCorpus")
 S3method("tm_map", "DistributedCorpus")
-
