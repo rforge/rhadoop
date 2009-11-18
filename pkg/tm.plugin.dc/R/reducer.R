@@ -1,20 +1,16 @@
-# NOTE: Works only for term-document matrices (and NOT document-term matrices)
-c_TermDocumentMatrix <-function(m, doc) {
-    tf <- termFreq(doc)
 
-    m$dimnames <- list(Terms = c(Terms(m), setdiff(names(tf), Terms(m))),
-                       Docs = c(Docs(m), ID(doc)))
-    m$nrow <- length(Terms(m))
-    m$ncol <- ncol(m) + 1 # better use length(Docs(m)) for consistency?
+TermDocumentMatrix.DistributedCorpus <- function( x, control = list() ){
+  ## control contains preprocessing function, see help page of termFreq()
 
-    m$i <- c(m$i, which(Terms(m) %in% names(tf)))
-    m$j <- c(m$j, rep(nDocs(m), length(tf)))
-    m$v <- c(m$v, tf)
-
-    m
+  ## if empty then reduce only (e.g., when preprocessing has already be done with tm_map)
+  ## otherwise call tm_map_reduce where the mapper does the proprocessing and the reducer
+  ## makes the TDMs
+  
 }
 
-tm_map_reduce <- function(x, MAP, REDUCE = NULL, ..., cmdenv_arg = NULL, useMeta = FALSE, lazy = FALSE) {
+
+## TODO: we should support several 'map functions' e.g. stripWhitespace, stemming, etc.
+.tm_map_reduce <- function(x, MAP, REDUCE = NULL, ..., cmdenv_arg = NULL, useMeta = FALSE, lazy = FALSE) {
     stopifnot(inherits(x, "DistributedCorpus"))
     rev <- tempfile()
     cmdenv_arg <- c(cmdenv_arg, sprintf("_HIVE_FUNCTION_TO_APPLY_=%s", as.character(substitute(FUN))))
@@ -29,4 +25,51 @@ tm_map_reduce <- function(x, MAP, REDUCE = NULL, ..., cmdenv_arg = NULL, useMeta
     ## update ActiveRevision in dc
     x <- updateRevision(x, rev)
     x
+}
+
+## currently the tm reducer only makes TDMs out of the input (documents)
+## NOTE: Works only for term-document matrices (and NOT document-term matrices)
+.generate_tm_reducer <- function() {
+  function(){
+    require("tm")
+
+    split_line <- function(line) {
+      val <- unlist(strsplit(line, "\t"))
+      list(key = val[1], value = unserialize(charToRaw(gsub("\\n", "\n", val[2], fixed = TRUE))))
+    }
+
+    mapred_write_output <- function(key, value)
+      cat(paste(key, gsub("\n", "\\n", rawToChar(serialize(value, NULL, TRUE)), fixed = TRUE), sep = "\t"), sep = "\n")
+
+    c_TermDocumentMatrix <-function(m, doc, control = list()) {
+      tf <- termFreq(doc, control)
+      
+      m$dimnames <- list(Terms = c(Terms(m), setdiff(names(tf), Terms(m))),
+                         Docs = c(Docs(m), ID(doc)))
+      m$nrow <- length(Terms(m))
+      m$ncol <- length(Docs(m))
+      
+      m$i <- c(m$i, which(Terms(m) %in% names(tf)))
+      m$j <- c(m$j, rep(nDocs(m), length(tf)))
+      m$v <- c(m$v, tf)
+      
+      m
+    }
+
+    ## initialize TDM
+    out <- tm:::.TermDocumentMatrix()
+    
+    con <- file("stdin", open = "r")
+    while (length(line <- readLines(con, n = 1L, warn = FALSE)) > 0) {
+      input <- split_line(line)
+      
+      out <- c_TermDocumentMatrix(out, input$value)
+    }
+    mapred_write_output(chunkname, mapping)
+    close(con)
+
+    ## key temporarily the name of the last active document
+    ## FIXME: should be replaced by sort of a checksum of the matrix
+    mapred_write_output(input$key, out)
+  }
 }
