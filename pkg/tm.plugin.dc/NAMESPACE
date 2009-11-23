@@ -1,8 +1,18 @@
+## Constructor
 export("DistributedCorpus")
-export("c_TermDocumentMatrix")
+
+## Helper functions
 export("setRevision")
 
+## Generiv functions
+export("as.DistributedCorpus")
+
+## Methods on DistributedCorpus
 S3method("print", "DistributedCorpus")
 S3method("[[", "DistributedCorpus")
 S3method("summary", "DistributedCorpus")
 S3method("tm_map", "DistributedCorpus")
+S3method("TermDocumentMatrix", "DistributedCorpus")
+
+## Methods on Corpus
+S3method("as.DistributedCorpus", "Corpus")

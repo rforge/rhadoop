@@ -10,12 +10,8 @@ hive_stream <- function(mapper, reducer, input, output, henv = hive(),
   ## check directories in DFS
   stopifnot(DFS_dir_exists(input, henv))
   
-  ## set additional args to Hadoop Streaming
-  streaming_args <- "mapred.reduce.tasks=1"
   if(missing(reducer)){
-    streaming_args <- "mapred.reduce.tasks=0"
     reducer <- NULL
-    reducer_exec <- NULL
   }
 
   ## TODO: encapsulate in separate function something like "prepare..."
@@ -26,8 +22,12 @@ hive_stream <- function(mapper, reducer, input, output, henv = hive(),
   ## check if mapper scripts exists  
   stopifnot(file.exists(mapper_exec))
   ## now the reducer (if available)
+  reducer_exec <- NULL
+  streaming_args <- "mapred.reduce.tasks=0"
   if(!is.null(reducer)){
     .hadoop_check_function_sanity(reducer)
+    ## set additional args to Hadoop Streaming
+    streaming_args <- "mapred.reduce.tasks=1"
     reducer_exec <- .generate_executable(reducer, .get_hadoop_executable(type = "reducer"))
     stopifnot(file.exists(reducer_exec))
   }
@@ -36,8 +36,6 @@ hive_stream <- function(mapper, reducer, input, output, henv = hive(),
     mapper_args <- ""
   if(is.null(reducer_args))
     reducer_args <- ""
-  if(is.null(cmdenv_arg))
-    cmdenv_arg <- ""
 
   ## start hadoop streaming
   msg <- .hadoop_streaming(mapper_exec, reducer_exec, input, output, mapper_args, reducer_args, streaming_args, cmdenv_arg, henv)
@@ -52,14 +50,18 @@ hive_stream <- function(mapper, reducer, input, output, henv = hive(),
   files <- paste(unique(c("", mapper, reducer)), collapse = " -file ")
   mapper_arg <- sprintf("-mapper '%s %s'", mapper, as.character(mapper_args))
   reducer_arg <- ""
+  #writeLines(sprintf("DEBUG: reducer: %s", as.character(!is.null(reducer))))
   if(!is.null(reducer))
     reducer_arg <- sprintf("-reducer '%s %s'", reducer, as.character(reducer_args))
-  cmdenv_arg <- paste("-cmdenv", as.character(cmdenv_arg), collapse = " ")
-  
-  system(sprintf('%s jar %s/contrib/streaming/hadoop-*-streaming.jar -D %s -input %s -output %s %s %s %s %s',
+  if(is.null(cmdenv_arg))
+    cmdenv_arg <- ""
+  else
+    cmdenv_arg <- paste("-cmdenv", as.character(cmdenv_arg), collapse = " ")
+  out <- system(sprintf('%s jar %s/contrib/streaming/hadoop-*-streaming.jar -D %s -input %s -output %s %s %s %s %s',
                  hadoop(henv), hadoop_home(henv), streaming_args, input, output,
                  mapper_arg, reducer_arg, files, cmdenv_arg),
          intern = TRUE)
+  out
 }
 
 ## creates the mapper and/or reducer script
