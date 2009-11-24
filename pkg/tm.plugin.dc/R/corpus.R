@@ -92,11 +92,14 @@ print.DistributedCorpus <- function(x, ...) {
 
 
 as.DistributedCorpus <- function(x, chunksize = 8 * 1024^2, ...){
-  UseMethod(".as.DistributedCorpus")
+  UseMethod("as.DistributedCorpus")
 }
-  
-## TODO: create a generic function and a simple S3Method to stream a corpus to the DFS
-.as.DistributedCorpus.Corpus <- function(x, chunksize = 8 * 1024^2, ...){
+
+as.DistributedCorpus.DistributedCorpus <- function(x, chunksize = 8 * 1024^2, ...){
+  identity(x)
+}
+
+as.DistributedCorpus.Corpus <- function(x, chunksize = 8 * 1024^2, ...){
   
   activeRev <- tmpdir <- tempfile()
   DFS_dir_create(tmpdir)

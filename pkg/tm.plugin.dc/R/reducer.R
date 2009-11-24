@@ -16,6 +16,8 @@ TermDocumentMatrix.DistributedCorpus <- function( x, control = list() ){
   ## MAP is basically a call to termFreq
   ## REDUCE builds then the termDoc matrix
   revision <- .tm_map_reduce(x, .generate_TDM_mapper(), .generate_TDM_reducer(), cmdenv_arg = cmdenv_arg)
+  if(!is.null(cmdenv_arg))
+    unlink(control_file)
   tdm <- tm:::.TermDocumentMatrix()
   chunks <- grep("part-", DFS_list(revision), value = TRUE)
   for(chunk in chunks){

@@ -1,9 +1,17 @@
 
 tm_map.DistributedCorpus <- function(x, FUN, ..., cmdenv_arg = NULL, useMeta = FALSE, lazy = FALSE) {
-  ## FUN is the name of a function provided by R/tm and is
-  ## supplied to the Rscript via an environment variable
-  cmdenv_arg <- c(cmdenv_arg, sprintf("_HIVE_FUNCTION_TO_APPLY_=%s", as.character(substitute(FUN))))
+  ## FUN is a function e.g., provided by R/tm or any user defined function.
+  ## It is supplied to the Rscript via an object file written to disk and exported as environment variable
+
+  ## TODO: shouldn't we have a function to check provided function for sanity?
+  ## FIXME: this file MUST be on a network file system mounted on every node
+  foo_file <- "~/tmp/_hive_map_function.Rda"
+  save(FUN, file = foo_file)
+  
+  cmdenv_arg <- c(cmdenv_arg, sprintf("_HIVE_FUNCTION_TO_APPLY_=%s", foo_file))
   rev <- .tm_map_reduce(x, .generate_tm_mapper(), cmdenv_arg = cmdenv_arg, useMeta = useMeta, ...)
+
+  unlink(foo_file)
   ## add new revision to corpus meta info
   attr(x, "Revisions") <- c(attr(x, "Revisions"), rev)
   ## update ActiveRevision in dc
@@ -14,7 +22,7 @@ tm_map.DistributedCorpus <- function(x, FUN, ..., cmdenv_arg = NULL, useMeta = F
 .generate_tm_mapper <- function() {
   function(){
     require("tm")
-    fun <- match.fun(Sys.getenv("_HIVE_FUNCTION_TO_APPLY_"))
+    load(Sys.getenv("_HIVE_FUNCTION_TO_APPLY_"))
 
     split_line <- function(line) {
       val <- unlist(strsplit(line, "\t"))
@@ -33,7 +41,7 @@ tm_map.DistributedCorpus <- function(x, FUN, ..., cmdenv_arg = NULL, useMeta = F
     while (length(line <- readLines(con, n = 1L, warn = FALSE)) > 0) {
       input <- split_line(line)
       
-      result <- fun(input$value)
+      result <- FUN(input$value)
       if(is.character(result)){
         mapping[[input$key]] <- c(chunk = chunkname, position = position)
         position <- position + 1L

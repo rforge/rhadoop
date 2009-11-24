@@ -1,3 +1,5 @@
+import("tm")
+
 ## Constructor
 export("DistributedCorpus")
 
@@ -16,3 +18,5 @@ S3method("TermDocumentMatrix", "DistributedCorpus")
 
 ## Methods on Corpus
 S3method("as.DistributedCorpus", "Corpus")
+S3method("as.DistributedCorpus", "DistributedCorpus")
+
