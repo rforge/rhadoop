@@ -4,51 +4,51 @@
 ## TODO: ncpu argument -> probably via -D mapred.jobtracker.maxtasks.per.job=..
 ## TODO: command env arg in henv ?
 ## TODO: what to do with mapper_args, reducer_args?
-## TODO: what if you want more than 1 mapper/reducer?
-hive_stream <- function(mapper, reducer, input, output, henv = hive(),
-                        mapper_args = NULL, reducer_args = NULL, cmdenv_arg=NULL) {  
+## TODO: what if you want to supply more than 1 mapper/reducer function?
+hive_stream <- function( mapper, reducer, input, output, henv = hive(),
+                         mapper_args = NULL, reducer_args = NULL, cmdenv_arg=NULL ) {  
   ## check directories in DFS
-  stopifnot(DFS_dir_exists(input, henv))
+  stopifnot( DFS_dir_exists(input, henv) )
   
-  if(missing(reducer)){
+  if( missing(reducer) ){
     reducer <- NULL
   }
 
   ## TODO: encapsulate in separate function something like "prepare..."
   ## are the mapper and reducer really functions?
-  .hadoop_check_function_sanity(mapper)
+  .hadoop_check_function_sanity( mapper )
   ## generate mapper and reducer executables
-  mapper_exec <- .generate_executable(mapper, .get_hadoop_executable(type = "mapper"))
+  mapper_exec <- .generate_executable( mapper, .get_hadoop_executable(type = "mapper") )
   ## check if mapper scripts exists  
-  stopifnot(file.exists(mapper_exec))
+  stopifnot( file.exists(mapper_exec) )
   ## now the reducer (if available)
   reducer_exec <- NULL
   streaming_args <- "mapred.reduce.tasks=0"
-  if(!is.null(reducer)){
-    .hadoop_check_function_sanity(reducer)
+  if( !is.null(reducer) ){
+    .hadoop_check_function_sanity( reducer )
     ## set additional args to Hadoop Streaming
-    streaming_args <- "mapred.reduce.tasks=1"
-    reducer_exec <- .generate_executable(reducer, .get_hadoop_executable(type = "reducer"))
-    stopifnot(file.exists(reducer_exec))
+    streaming_args <- sprintf( "mapred.reduce.tasks=%d", hive_get_nreducer(henv) )
+    reducer_exec <- .generate_executable( reducer, .get_hadoop_executable(type = "reducer") )
+    stopifnot( file.exists(reducer_exec) )
   }
   ## check args
-  if(is.null(mapper_args))
+  if( is.null(mapper_args) )
     mapper_args <- ""
-  if(is.null(reducer_args))
+  if( is.null(reducer_args) )
     reducer_args <- ""
 
   ## start hadoop streaming
-  msg <- .hadoop_streaming(mapper_exec, reducer_exec, input, output, mapper_args, reducer_args, streaming_args, cmdenv_arg, henv)
+  msg <- .hadoop_streaming( mapper_exec, reducer_exec, input, output, mapper_args, reducer_args, streaming_args, cmdenv_arg, henv )
 
   ## delete temporary created mapper/reducer scripts
-  .hadoop_cleanup(files = c(mapper_exec, reducer_exec))
-  invisible(msg)
+  .hadoop_cleanup( files = c(mapper_exec, reducer_exec) )
+  invisible( msg )
 }
 
-.hadoop_streaming <- function(mapper, reducer, input, output, mapper_args, reducer_args,
-                              streaming_args, cmdenv_arg, henv){
-  files <- paste(unique(c("", mapper, reducer)), collapse = " -file ")
-  mapper_arg <- sprintf("-mapper '%s %s'", mapper, as.character(mapper_args))
+.hadoop_streaming <- function( mapper, reducer, input, output, mapper_args, reducer_args,
+                               streaming_args, cmdenv_arg, henv ){
+  files <- paste( unique(c("", mapper, reducer)), collapse = " -file " )
+  mapper_arg <- sprintf( "-mapper '%s %s'", mapper, as.character(mapper_args) )
   reducer_arg <- ""
   #writeLines(sprintf("DEBUG: reducer: %s", as.character(!is.null(reducer))))
   if(!is.null(reducer))

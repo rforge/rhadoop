@@ -16,6 +16,7 @@
 ## Returns on object of class 'hive'.
 hive_create <- function( hadoop_home ){
   hive <- .create_hive_from_installation( hadoop_home )
+  hive_set_nreducer( hive_default_nreducer(hive), hive )
   class( hive ) <- "hive"
   hive
 }
@@ -108,6 +109,18 @@ hive_stop <- function( henv = hive() ){
 hive_is_available <- function( henv = hive() ){
   stopifnot( hive_is_valid(henv) )
   suppressWarnings( DFS_is_available(henv) )
+}
+
+hive_get_nreducer <- function( henv =hive() ){
+  get( "nreducer", henv )
+}
+
+hive_set_nreducer <- function(nreducer, henv = hive() ) {
+  assign( "nreducer", as.integer(nreducer), henv )
+}
+
+hive_default_nreducer <- function( henv = hive() ){
+  as.integer(length(hive_get_slaves(henv)) * 1.5)
 }
 
 ## Internal extractor functions

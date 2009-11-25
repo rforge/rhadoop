@@ -67,10 +67,12 @@ TermDocumentMatrix.DistributedCorpus <- function( x, control = list() ){
       input <- split_line(line)
 
       ## in the TDM mapper we apply termFreq on the documents, doing also all the
-      ## preprocessing tasks
-      result <- termFreq(input$value, control)
-      if(length(result)){
-        mapred_write_output(ID(input$value), result)
+      ## preprocessing tasks. Note: the last entry is the DocMapping (=environment)
+      if(!is.environment(input$value)){
+        result <- termFreq(input$value, control)
+        if(length(result)){
+          mapred_write_output(ID(input$value), result)
+        }
       }
     }
     close(con)
