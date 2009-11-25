@@ -15,18 +15,17 @@ TermDocumentMatrix.DistributedCorpus <- function( x, control = list() ){
   }
   ## MAP is basically a call to termFreq
   ## REDUCE builds then the termDoc matrix
+  ## TODO: implement check nreducers <= nDocs 
   revision <- .tm_map_reduce(x, .generate_TDM_mapper(), .generate_TDM_reducer(), cmdenv_arg = cmdenv_arg)
   if(!is.null(cmdenv_arg))
     unlink(control_file)
-  tdm <- tm:::.TermDocumentMatrix()
-  chunks <- grep("part-", DFS_list(revision), value = TRUE)
-  for(chunk in chunks){
-    object <- hive:::DFS_read_lines3( file.path(revision, chunk), henv = hive() )
-    value <- strsplit( object, "\t" )[[ 1 ]][2]
-    new <- unserialize(charToRaw(gsub("\\n", "\n", value, fixed = TRUE)))
-    tdm <- c( tdm, new )
-  }
-  tdm
+  chunks <- file.path(revision, grep("part-", DFS_list(revision), value = TRUE))
+  tdms <- lapply( chunks, function(x) {object <- hive:::DFS_read_lines3(x, henv = hive())
+                                       value <- strsplit( object, "\t" )[[ 1 ]][2]
+                                       unserialize(charToRaw(gsub("\\n", "\n", value, fixed = TRUE)))
+                                       }
+                 )
+  Reduce(c, tdms)
 }
 
 
@@ -91,32 +90,24 @@ TermDocumentMatrix.DistributedCorpus <- function( x, control = list() ){
       val <- unlist(strsplit(line, "\t"))
       list(key = val[1], value = unserialize(charToRaw(gsub("\\n", "\n", val[2], fixed = TRUE))))
     }
-    
+
     mapred_write_output <- function(key, value)
       cat(paste(key, gsub("\n", "\\n", rawToChar(serialize(value, NULL, TRUE)), fixed = TRUE), sep = "\t"), sep = "\n")
-
-    c_TermDocumentMatrix <-function(m, docID, tf) {
-  
-      m$dimnames <- list(Terms = c(Terms(m), setdiff(names(tf), Terms(m))),
-                         Docs = c(Docs(m), docID))
-      m$nrow <- length(Terms(m))
-      m$ncol <- length(Docs(m))
-      
-      m$i <- c(m$i, which(Terms(m) %in% names(tf)))
-      m$j <- c(m$j, rep(nDocs(m), length(tf)))
-      m$v <- c(m$v, tf)
-      
-      m
-    }
-    
+        
     ## initialize TDM
     out <- tm:::.TermDocumentMatrix()
     
     con <- file("stdin", open = "r")
     while (length(line <- readLines(con, n = 1L, warn = FALSE)) > 0) {
       input <- split_line(line)
-      
-      out <- c_TermDocumentMatrix(out, input$key, input$value)
+
+      new <- tm:::.TermDocumentMatrix(i = seq_along(input$value),
+                                      j = rep(1, length(input$value)),
+                                      v = as.numeric(input$value),
+                                      nrow = length(input$value),
+                                      ncol = 1,
+                                      dimnames = list(names(input$value), input$key))
+      out <- c(out, new)
     }
     close(con)
     
