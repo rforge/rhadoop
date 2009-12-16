@@ -182,6 +182,10 @@ setRevision <- function(corpus, revision){
     corpus
 }
 
+getRevisions <- function(corpus){
+    attr(corpus, "Revisions")
+}
+
 updateRevision <- function(corpus, revision){
   split_line <- function(line) {
     val <- unlist(strsplit(line, "\t"))

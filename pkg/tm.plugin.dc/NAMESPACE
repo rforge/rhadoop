@@ -5,8 +5,9 @@ export("DistributedCorpus")
 
 ## Helper functions
 export("setRevision")
+export("getRevisions")
 
-## Generiv functions
+## Generic functions
 export("as.DistributedCorpus")
 
 ## Methods on DistributedCorpus
