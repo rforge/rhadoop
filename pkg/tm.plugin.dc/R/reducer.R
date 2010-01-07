@@ -25,7 +25,7 @@ TermDocumentMatrix.DistributedCorpus <- function( x, control = list() ){
                                        unserialize(charToRaw(gsub("\\n", "\n", value, fixed = TRUE)))
                                        }
                  )
-  Reduce(c, tdms)
+  do.call(tm:::c.TermDocumentMatrix1, tdms)
 }
 
 
@@ -95,24 +95,29 @@ TermDocumentMatrix.DistributedCorpus <- function( x, control = list() ){
       cat(paste(key, gsub("\n", "\\n", rawToChar(serialize(value, NULL, TRUE)), fixed = TRUE), sep = "\t"), sep = "\n")
         
     ## initialize TDM
-    out <- tm:::.TermDocumentMatrix()
-    
+#    out <- tm:::.TermDocumentMatrix()
+    out <- list()
     con <- file("stdin", open = "r")
     while (length(line <- readLines(con, n = 1L, warn = FALSE)) > 0) {
       input <- split_line(line)
-
-      new <- tm:::.TermDocumentMatrix(i = seq_along(input$value),
+      out <- c(out, tm:::.TermDocumentMatrix(i = seq_along(input$value),
                                       j = rep(1, length(input$value)),
                                       v = as.numeric(input$value),
                                       nrow = length(input$value),
                                       ncol = 1,
-                                      dimnames = list(names(input$value), input$key))
-      out <- c(out, new)
+                                      dimnames = list(names(input$value), input$key)))
+#      new <- tm:::.TermDocumentMatrix(i = seq_along(input$value),
+#                                      j = rep(1, length(input$value)),
+#                                      v = as.numeric(input$value),
+#                                      nrow = length(input$value),
+#                                      ncol = 1,
+#                                      dimnames = list(names(input$value), input$key))
+#      out <- tm:::c.TermDocumentMatrix1(out, new)
     }
     close(con)
     
     ## key temporarily the name of the last active document
     ## FIXME: should be replaced by sort of a checksum of the matrix
-    mapred_write_output(input$key, out)
+   mapred_write_output(input$key, do.call(tm:::c.TermDocumentMatrix1, out))
   }
 }
