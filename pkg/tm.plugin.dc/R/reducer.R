@@ -2,13 +2,16 @@
 TermDocumentMatrix.DistributedCorpus <- function( x, control = list() ){
   ## control contains preprocessing function, see help page of termFreq()
 
-  ## if empty then termFreq is called with default options (e.g., when preprocessing has already be done using tm_map())
-  ## otherwise call tm_map_reduce where the mapper does the preprocessing (supplied with the control argument) and the reducer
+  ## if empty then termFreq is called with default options (e.g., when
+  ## preprocessing has already be done using tm_map())
+  ## otherwise call tm_map_reduce where the mapper does the preprocessing
+  ## (supplied with the control argument) and the reducer
   ## makes the TDMs
   cmdenv_arg <- NULL
   if( length(control) ){
     ## TODO: shouldn't we have a function to check control for sanity?
-    ## NOTE: the control file MUST be on a network file system mounted on every node
+    ## NOTE: the control file MUST be on a network file system mounted on
+    ## every node
     control_file <- "~/tmp/_hive_termfreq_control.Rda"
     save(control, file = control_file)
     cmdenv_arg <- sprintf("_HIVE_TERMFREQ_CONTROL_=%s", control_file)
@@ -16,21 +19,26 @@ TermDocumentMatrix.DistributedCorpus <- function( x, control = list() ){
   ## MAP is basically a call to termFreq
   ## REDUCE builds then the termDoc matrix
   ## TODO: implement check nreducers <= nDocs 
-  revision <- .tm_map_reduce(x, .generate_TDM_mapper(), .generate_TDM_reducer(), cmdenv_arg = cmdenv_arg)
+  revision <- .tm_map_reduce(x,
+                             .generate_TDM_mapper(),
+                             .generate_TDM_reducer(),
+                             cmdenv_arg = cmdenv_arg)
   if(!is.null(cmdenv_arg))
     unlink(control_file)
   chunks <- file.path(revision, grep("part-", DFS_list(revision), value = TRUE))
-  tdms <- lapply( chunks, function(x) {object <- hive:::DFS_read_lines3(x, henv = hive())
-                                       value <- strsplit( object, "\t" )[[ 1 ]][2]
-                                       unserialize(charToRaw(gsub("\\n", "\n", value, fixed = TRUE)))
-                                       }
+  tdms <- lapply( chunks, function(x) {
+      object <- hive:::DFS_read_lines3(x, henv = hive())
+      value <- strsplit( object, "\t" )[[ 1 ]][2]
+      unserialize(charToRaw(gsub("\\n", "\n", value, fixed = TRUE))) }
                  )
   do.call(tm:::c.TermDocumentMatrix1, tdms)
 }
 
 
-## TODO: we should support several 'map functions' e.g. stripWhitespace, stemming, etc.
-.tm_map_reduce <- function(x, MAP, REDUCE = NULL, ..., cmdenv_arg = NULL, useMeta = FALSE, lazy = FALSE) {
+## TODO: we should support several 'map functions' e.g. stripWhitespace,
+## stemming, etc.
+.tm_map_reduce <- function(x, MAP, REDUCE = NULL, ..., cmdenv_arg = NULL,
+                           useMeta = FALSE, lazy = FALSE) {
   stopifnot(inherits(x, "DistributedCorpus"))
   rev <- tempfile()
   ## start the streaming job
@@ -55,7 +63,8 @@ TermDocumentMatrix.DistributedCorpus <- function( x, control = list() ){
     
     split_line <- function(line) {
       val <- unlist(strsplit(line, "\t"))
-      list(key = val[1], value = unserialize(charToRaw(gsub("\\n", "\n", val[2], fixed = TRUE))))
+      list( key   = val[1],
+            value = unserialize(charToRaw(gsub("\\n", "\n", val[2], fixed = TRUE))))
     }
 
     mapred_write_output <- function(key, value)
@@ -95,17 +104,19 @@ TermDocumentMatrix.DistributedCorpus <- function( x, control = list() ){
       cat(paste(key, gsub("\n", "\\n", rawToChar(serialize(value, NULL, TRUE)), fixed = TRUE), sep = "\t"), sep = "\n")
         
     ## initialize TDM
-#    out <- tm:::.TermDocumentMatrix()
-    out <- list()
+    #out <- tm:::.TermDocumentMatrix()
+    out <- list(tm:::.TermDocumentMatrix())
     con <- file("stdin", open = "r")
     while (length(line <- readLines(con, n = 1L, warn = FALSE)) > 0) {
       input <- split_line(line)
-      out <- c(out, tm:::.TermDocumentMatrix(i = seq_along(input$value),
-                                      j = rep(1, length(input$value)),
-                                      v = as.numeric(input$value),
-                                      nrow = length(input$value),
-                                      ncol = 1,
-                                      dimnames = list(names(input$value), input$key)))
+      out <- c(out,
+               list(tm:::.TermDocumentMatrix(i = seq_along(input$value),
+                                             j = rep(1, length(input$value)),
+                                             v = as.numeric(input$value),
+                                             nrow = length(input$value),
+                                             ncol = 1,
+                                             dimnames = list(names(input$value),
+                                                             input$key))))
 #      new <- tm:::.TermDocumentMatrix(i = seq_along(input$value),
 #                                      j = rep(1, length(input$value)),
 #                                      v = as.numeric(input$value),
