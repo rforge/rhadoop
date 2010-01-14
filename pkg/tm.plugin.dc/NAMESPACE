@@ -11,11 +11,12 @@ export("getRevisions")
 export("as.DistributedCorpus")
 
 ## Methods on DistributedCorpus
-S3method("print", "DistributedCorpus")
 S3method("[[", "DistributedCorpus")
+S3method("length", "DistributedCorpus")
+S3method("print", "DistributedCorpus")
 S3method("summary", "DistributedCorpus")
-S3method("tm_map", "DistributedCorpus")
 S3method("TermDocumentMatrix", "DistributedCorpus")
+S3method("tm_map", "DistributedCorpus")
 
 ## Methods on Corpus
 S3method("as.DistributedCorpus", "Corpus")

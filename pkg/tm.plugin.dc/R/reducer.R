@@ -31,7 +31,7 @@ TermDocumentMatrix.DistributedCorpus <- function( x, control = list() ){
       value <- strsplit( object, "\t" )[[ 1 ]][2]
       unserialize(charToRaw(gsub("\\n", "\n", value, fixed = TRUE))) }
                  )
-  do.call(tm:::c.TermDocumentMatrix1, tdms)
+  do.call(c, tdms)
 }
 
 
@@ -129,6 +129,6 @@ TermDocumentMatrix.DistributedCorpus <- function( x, control = list() ){
     
     ## key temporarily the name of the last active document
     ## FIXME: should be replaced by sort of a checksum of the matrix
-   mapred_write_output(input$key, do.call(tm:::c.TermDocumentMatrix1, out))
+   mapred_write_output(input$key, do.call(c, out))
   }
 }
