@@ -26,7 +26,8 @@ tm_map.DistributedCorpus <- function(x, FUN, ..., cmdenv_arg = NULL, useMeta = F
 
     split_line <- function(line) {
       val <- unlist(strsplit(line, "\t"))
-      list(key = as.integer(val[1]), value = unserialize(charToRaw(gsub("\\n", "\n", val[2], fixed = TRUE))))
+      list(key = as.integer(val[1]),
+           value = unserialize(charToRaw(gsub("\\n", "\n", val[2], fixed = TRUE))))
     }
 
     mapred_write_output <- function(key, value)

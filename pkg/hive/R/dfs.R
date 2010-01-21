@@ -196,7 +196,7 @@ DFS_write_lines <- function( text, file, henv = hive(), ... ) {
   
   outputstream <- hdfs$create(HDFS_path(file))
 #  outputstream$write(text)
-  for( i in 1:length(text) ){
+  for( i in seq_along(text) ){
     outputstream$writeBytes(text[i])
     outputstream$writeBytes("\n")
   }
