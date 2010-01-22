@@ -1,15 +1,18 @@
 ## .storage_init() initializes the storage to be used for the distributed corpus.
-.dc_storage_init <- function( storage ) {
-  if( missing(storage) )
-    storage <- dc_default_storage()
-  tmp <- tryCatch( check_storage_storage_for_sanity )
-  storage <- if( inherits(tmp, "error") )
-    storage <- .dc_empty_storage()
+.dc_storage_init <- function( x ) {
+  if( missing(x) )
+    x <- dc_default_storage()
+  ## Create storage base directory
+  if( is.dc_storage(x) )
+    x$dir_create( x$base_directory )
+  
+  checked <- tryCatch( check_storage_storage_for_sanity(x), error = identity )
+  out <- if( inherits(checked, "error") )
+    .dc_empty_storage()
   else
-    tmp
-  ## Initialize storage directory
-  storage$dir_create(storage$base_directory)
-  storage
+    x
+  
+  out
 }
 
 .dc_empty_storage <- function(){
@@ -17,15 +20,15 @@
 }
 
 ## Storage constructor
-dc_storage <- function(description,
-                       base_directory,
-                       chunksize,
-                       dir_create,
-                       fetch_last_line,
-                       list_directory,
-                       read_lines,
-                       unlink,
-                       write_lines){
+.dc_storage <- function(description,
+                        base_directory,
+                        chunksize,
+                        dir_create,
+                        fetch_last_line,
+                        list_directory,
+                        read_lines,
+                        unlink,
+                        write_lines){
   structure(list(description = description,
                  chunksize = chunksize,
                  base_directory = base_directory,
@@ -40,29 +43,29 @@ dc_storage <- function(description,
 
 ## Default storage is the local disk
 dc_default_storage <- function(){
-  dc_storage(description     = "Local Disk Storage",
-             base_directory  = tempfile(),
-             chunksize       = 1024^3,
-             dir_create      = base::dir.create,
-             fetch_last_line = function(x) utils::tail(base::readLines(file(x, "r")), n = 1L),
-             list_directory  = base::dir,
-             read_lines      = function(x) base::readLines(file(x, "r")),
-             unlink          = function(x) base::file.remove(x),
-             write_lines     = function(text, fil) base::writeLines(text, con = as.character(fil))
-             )
+  .dc_storage(description     = "Local Disk Storage",
+              base_directory  = tempfile(),
+              chunksize       = 1024^3,
+              dir_create      = base::dir.create,
+              fetch_last_line = function(x) utils::tail(base::readLines(file(x, "r")), n = 1L),
+              list_directory  = base::dir,
+              read_lines      = function(x) base::readLines(file(x, "r")),
+              unlink          = function(x) base::file.remove(x),
+              write_lines     = function(text, fil) base::writeLines(text, con = as.character(fil))
+              )
 }
 
 dc_HDFS_storage <- function(henv = hive()){
-  dc_storage(description     = "Hadoop Distributed File System (HDFS)",
-             base_directory  = tempfile(),
-             chunksize       = 1024^3,
-             dir_create      = function(x) hive::DFS_dir_create(x, henv = henv),
-             fetch_last_line = function(x) hive::DFS_tail(n = 1L, as.character(x), henv = henv),
-             list_directory  = function(x) hive:::DFS_list(x, henv = henv),
-             read_lines      = function(x) hive:::DFS_read_lines3(as.character(x), henv = henv),
-             unlink          = function(x) hive::DFS_dir_remove(x, henv = henv),
-             write_lines     = function(text, fil) hive::DFS_write_lines(text, as.character(fil), henv = henv)
-             )
+  .dc_storage(description     = "Hadoop Distributed File System (HDFS)",
+              base_directory  = tempfile(),
+              chunksize       = 1024^3,
+              dir_create      = function(x) hive::DFS_dir_create(x, henv = henv),
+              fetch_last_line = function(x) hive::DFS_tail(n = 1L, as.character(x), henv = henv),
+              list_directory  = function(x) hive:::DFS_list(x, henv = henv),
+              read_lines      = function(x) hive:::DFS_read_lines3(as.character(x), henv = henv),
+              unlink          = function(x) hive::DFS_dir_remove(x, henv = henv),
+              write_lines     = function(text, fil) hive::DFS_write_lines(text, as.character(fil), henv = henv)
+              )
 }
 
 is.dc_storage <- function( x )
@@ -83,6 +86,9 @@ summary.dc_storage <- function( x, ... ){
                             collapse = ", ")))
 }
 
+dc_chunksize <-function( storage )
+  storage$chunksize
+  
 dc_dir_create <- function( storage, dir ){
   stopifnot( is.dc_storage(storage) )
   dir <- sub("/./", "", file.path(storage$base_directory, dir ))

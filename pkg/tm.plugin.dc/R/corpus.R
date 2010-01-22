@@ -1,7 +1,7 @@
 # Authors: Ingo Feinerer, Stefan Theussl
 
 .DistributedCorpus <-
-function( x, active_revision, chunks, cmeta, dmeta, keys, mapping, revisions ) {
+function( x, active_revision, chunks, cmeta, dmeta, keys, mapping, revisions, storage ) {
   attr(x, "ActiveRevision") <- active_revision
   attr(x, "Chunks") <- chunks
   attr(x, "CMetaData") <- cmeta
@@ -9,6 +9,7 @@ function( x, active_revision, chunks, cmeta, dmeta, keys, mapping, revisions ) {
   attr(x, "Keys") <- keys
   attr(x, "Mapping") <- mapping
   attr(x, "Revisions") <- revisions
+  attr(x, "Storage") <- storage
   class(x) <- c("DistributedCorpus", "Corpus", "list")
   x
 }
@@ -18,15 +19,15 @@ DistributedCorpus <-
     #   - only support a directory as source (DirSource)
     function(source,
              readerControl = list(reader = source$DefaultReader, language = "eng"),
-             storage = storage(), ...) {
+             storage = dcStorage(), ...) {
 
         if (!inherits(source, "DirSource"))
             stop("unsupported source type (use DirSource instead)")
 
         readerControl <- tm:::prepareReader(readerControl, source$DefaultReader, ...)
         
-        activeRev <- tmpdir <- tempfile()
-        dc_dir_create(storage, tmpdir)
+        activeRev <- .generate_random_revision()
+        dc_dir_create(storage, activeRev)
 
         ## Initialization
         ## - key            -> uniquely identifies document in corpus
@@ -63,7 +64,7 @@ DistributedCorpus <-
           outlines <- c(outlines, sprintf("%s\t%s", as.character(key), value))
 
           ## write chunk if size greater than pre-defined chunksize
-          if(object.size(outlines) >= chunksize){
+          if(object.size(outlines) >= dc_chunksize(storage)){
             dc_write_lines( storage, outlines, file.path(activeRev, sprintf("part-%d", chunk_iterator)) )
             sumdoc <- sum(sumdoc, length(outlines))
             outlines <- character(0L)
@@ -75,11 +76,12 @@ DistributedCorpus <-
         }
 
         if(length(outlines)){
-          dc_write_lines( storage, file.path(activeRev, sprintf("part-%d", chunk_iterator)) )
+          dc_write_lines( storage, outlines, file.path(activeRev, sprintf("part-%d", chunk_iterator)) )
           chunk_iterator <- chunk_iterator + 1
         }
 
         .DistributedCorpus(x = list(),
+                           storage = storage,
                            active_revision = activeRev,
                            chunks = structure(list(paste("part-", 1:(chunk_iterator - 1), sep = "")), names = activeRev),
                            cmeta = tm:::.MetaDataNode(),
@@ -100,18 +102,18 @@ print.DistributedCorpus <- function(x, ...) {
 length.DistributedCorpus <- function(x)
   length(Keys(x))
 
-as.DistributedCorpus <- function(x, chunksize = 8 * 1024^2, ...){
+as.DistributedCorpus <- function(x, storage = dcStorage(), ...){
   UseMethod("as.DistributedCorpus")
 }
 
-as.DistributedCorpus.DistributedCorpus <- function(x, chunksize = 8 * 1024^2, ...){
+as.DistributedCorpus.DistributedCorpus <- function(x, storage = dcStorage(), ...){
   identity(x)
 }
 
-as.DistributedCorpus.Corpus <- function(x, storage, ...){
+as.DistributedCorpus.Corpus <- function(x, storage = dcStorage(), ...){
   
-  activeRev <- tmpdir <- tempfile()
-  dc_dir_create(storage, tmpdir)
+  activeRev <- .generate_random_revision()
+  dc_dir_create(storage, activeRev)
 
   ## we could do this much more efficiently as we know apriori the number of documents etc.
   ##  n <- 1
@@ -141,8 +143,8 @@ as.DistributedCorpus.Corpus <- function(x, storage, ...){
     
     outlines <- c(outlines, sprintf("%s\t%s", as.character(i), value))
     
-    ## write chunk if size greater than pre-defined chunksize
-    if(object.size(outlines) >= chunksize){
+    ## write chunk if size greater than pre-defined chunksize5B
+    if(object.size(outlines) >= dc_chunksize(storage)){
       dc_write_lines(storage, outlines, file.path(activeRev, sprintf("part-%d", chunk_iterator)) )
       outlines <- character(0L)
       position <- 1L
@@ -162,17 +164,21 @@ as.DistributedCorpus.Corpus <- function(x, storage, ...){
                      dmeta = meta(x),
                      keys = seq_len(length(x)),
                      mapping = structure(list(mapping), names = activeRev),
-                     revisions = list(activeRev)) 
+                     revisions = list(activeRev),
+                     storage = storage) 
 }
 
 `[[.DistributedCorpus` <- function(x, i) {
     ## TODO: what if there are more than 1 chunk
     mapping <- dc_get_text_mapping_from_revision( x )[ i, ]
-    line <- dc_read_lines( storage,
+    line <- dc_read_lines( dc_get_corpus_storage(x),
                            dc_get_file_path_for_chunk(x, mapping["Chunk"])
                            ) [ mapping["Position"] ]
     dc_unserialize_object( strsplit( line, "\t" )[[ 1 ]][ 2 ] )
 }
+
+DMetaData.DistributedCorpus <- function (x) 
+attr(x, "DMetaData")
   
 summary.DistributedCorpus <- function(object, ...) {
     tm:::summary.Corpus(object)
@@ -180,6 +186,7 @@ summary.DistributedCorpus <- function(object, ...) {
     cat("Available revisions:\n")
     cat(strwrap(paste(unlist(attr(object, "Revisions")), collapse = " "), indent = 2, exdent = 2), "\n")
     cat(sprintf("Active revision: %s\n", attr(object, "ActiveRevision")))
+    print(dc_get_corpus_storage(object))
 }
 
 Keys <- function(x) attr(x, "Keys")
@@ -203,7 +210,7 @@ updateRevision <- function(corpus, revision){
     list(key = val[1], value = dc_unserialize_object(val[2]))
   }
 
-  chunks <- grep("part-", dc_list_directory(storage, revision), value = TRUE)
+  chunks <- grep("part-", dc_list_directory(dc_get_corpus_storage(corpus), revision), value = TRUE)
 
   ## we need to read a certain number of bytes with DFS_tail.
   ## we estimate the size using the following formula:
@@ -218,7 +225,7 @@ updateRevision <- function(corpus, revision){
   # TODO: Do not use sapply
   #mapping <- sapply(sapply(chunks,
   #                         function(x) DFS_tail(n = 1, file.path(revision, x), size = readbytes, henv = hive())), split_line)
-  chunk_stamps <- lapply( chunks, function(x) dc_fetch_last_line(file.path(revision, x)) )
+  chunk_stamps <- lapply( chunks, function(x) dc_fetch_last_line(dc_get_corpus_storage(corpus), file.path(revision, x)) )
   ## chunk order is equal to order of first keys
   firstkeys <- unlist(lapply(chunk_stamps, function(x) split_line(x)$value["First_key"]))
   lastkeys <- unlist(lapply(chunk_stamps, function(x) split_line(x)$value["Last_key"]))
@@ -244,15 +251,21 @@ updateRevision <- function(corpus, revision){
   setRevision(corpus, revision)
 }
 
-dc_hash <- function( n )
-  matrix(0L, nrow = n, ncol = 2L, dimnames = list(NULL, c("Chunk", "Position")))
-
-dc_get_text_mapping_from_revision <- function(x, revision = attr(x, "ActiveRevision"))
-  attr( x, "Mapping" )[[ revision ]]
+dc_get_corpus_storage <- function(x)
+  attr(x, "Storage")
 
 dc_get_file_path_for_chunk <- function(x, chunk, revision = attr(x, "ActiveRevision"))
   file.path( revision, attr(x, "Chunks")[[ revision ]] [ chunk ])
 
+dc_get_text_mapping_from_revision <- function(x, revision = attr(x, "ActiveRevision"))
+  attr( x, "Mapping" )[[ revision ]]
+
+dc_hash <- function( n )
+  matrix(0L, nrow = n, ncol = 2L, dimnames = list(NULL, c("Chunk", "Position")))
+
 dc_unserialize_object <- function( x ) {
   unserialize( charToRaw(gsub("\\n", "\n", x, fixed = TRUE)) )
 }
+
+.generate_random_revision <- function()
+  sub("/", "", tempfile("", ""))

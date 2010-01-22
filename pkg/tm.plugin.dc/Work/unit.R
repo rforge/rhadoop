@@ -17,7 +17,7 @@ dc <- DistributedCorpus(DirSource(input),
 reuters <- Corpus(DirSource(input),
                         readerControl = list(reader = readReut21578XMLasPlain))
 ## first 100 documents
-stopifnot(all(sapply(seq_len(100), function(x) identical(reuters[[x]], dc[[x]]))))
+stopifnot(all(sapply(seq_len(length(reuters)), function(x) identical(reuters[[x]], dc[[x]]))))
 
 ## last 100 documents
 stopifnot(all(sapply((length(reuters)-100):length(reuters), function(x) identical(reuters[[x]], dc[[x]]))))

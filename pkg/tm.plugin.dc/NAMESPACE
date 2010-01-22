@@ -12,6 +12,7 @@ export("as.DistributedCorpus")
 
 ## Methods on DistributedCorpus
 S3method("[[", "DistributedCorpus")
+S3method("DMetaData", "DistributedCorpus")
 S3method("length", "DistributedCorpus")
 S3method("print", "DistributedCorpus")
 S3method("summary", "DistributedCorpus")
@@ -22,3 +23,10 @@ S3method("tm_map", "DistributedCorpus")
 S3method("as.DistributedCorpus", "Corpus")
 S3method("as.DistributedCorpus", "DistributedCorpus")
 
+## Storage functions
+export("dcStorage",
+       ".dc_storage_init",
+       ".dc_storage")
+
+S3method("print", "dc_storage")
+S3method("summary", "dc_storage")
