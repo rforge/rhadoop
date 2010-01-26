@@ -8,7 +8,8 @@
   
 }
 \usage{
-hive_stream(mapper, reducer, input, output, henv = hive(), ...)
+hive_stream( mapper, reducer, input, output, henv = hive(),
+             mapper_args = NULL, reducer_args = NULL, cmdenv_arg = NULL )
 }
 \arguments{
   \item{mapper}{a function which is executed on each worker node. The
@@ -21,8 +22,10 @@ hive_stream(mapper, reducer, input, output, henv = hive(), ...)
   \item{output}{specifies the output directory in the DFS containing the
     results after the streaming job finished.}
   \item{henv}{Hadoop local environment.}
-  \item{...}{additional arguments to Hadoop Streaming. Currently not in use.}
-
+  \item{mapper_args}{additional arguments to the mapper.}
+  \item{reducer_args}{additional arguments to the reducer.}
+  \item{cmdenv_arg}{additional arguments passed as environment variables
+    to distributed tasks.}
 }
 \details{
 

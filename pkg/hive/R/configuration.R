@@ -1,11 +1,24 @@
 ## Getters
 hive_get_parameter <- function(x, henv = hive()){
-  ## first search in hadoop-site configuration (overrules defaults)
-  site <- .hadoop_configuration("hadoop_site", henv)[x]
-  if(is.na(site))
-    ## if not found then return value from default configuration
-    return(.hadoop_configuration("hadoop_default", henv)[x])
-  site
+    if( hadoop_version(hive()) < "0.20.0" ) {
+        ## first search in hadoop-site configuration (overrules defaults)
+        out <- .hadoop_configuration("hadoop_site", henv)[x]
+        ## if not found then return value from default configuration
+        if(is.na(out))
+            out <- .hadoop_configuration("hadoop_default", henv)[x]
+    } else {
+        site <- list()
+        for( i in grep("_site", names(get("config_files", hive()))) )
+            site <- unlist( c( site, get("config_files", hive())[[ i ]]) )
+        default <- list()
+        for( i in grep("_default", names(get("config_files", hive()))) )
+            default <- unlist( c( default, get("config_files", hive())[[ i ]]) )
+        out <- site[x]
+        ## if not found then return value from default configuration
+        if(is.na(out))
+            out <- default[x]
+    }
+    out
 }
 
 hive_get_slaves <- function(henv = hive()){

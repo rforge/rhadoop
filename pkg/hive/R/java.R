@@ -3,6 +3,8 @@
 ############################################################
 
 add_java_DFS_support <- function(henv){
+    if( !all(hadoop_get_jars(henv) %in% .jclassPath()) )
+        .jaddClassPath(hadoop_get_jars(henv))
   ## add paths to Hadoop configuration files
   core_default <- .jnew("org/apache/hadoop/fs/Path", file.path(hadoop_home(henv), "src", "core", "core-default.xml"))
   core_site <- .jnew("org/apache/hadoop/fs/Path", file.path(hadoop_home(henv), "conf", "core-site.xml"))

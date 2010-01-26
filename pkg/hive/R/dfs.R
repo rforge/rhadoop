@@ -3,7 +3,7 @@
 
 ## use with caution
 ## FIXME: not working yet, too dangerous
-DFS_format <- function(henv){
+.DFS_format <- function(henv){
   ##machines, DFS_root= "/var/tmp/hadoop"
   stopifnot(hive_stop(henv))
   machines <- unique(c(hive_get_slaves(henv), hive_get_masters(henv)))
@@ -15,7 +15,7 @@ DFS_format <- function(henv){
 rm -rf %s-*' ", machine, DFS_root, DFS_root)
     system(command)
   }
-  ## reformat DFS
+  # reformat DFS
   system(sprintf("%s namenode -format", hadoop(henv)))
 }
 
@@ -117,9 +117,9 @@ DFS_list <- function( path = ".", henv = hive() ) {
   sapply(splitted, function(x) basename(x[2]))
 }
 
-DFS_cat <- function( x, henv = hive() ){
-  stopifnot( DFS_file_exists(x, henv) )
-  .DFS("-cat", x, henv)
+DFS_cat <- function( file, con = stdout(), henv = hive() ){
+  stopifnot( DFS_file_exists(file, henv) )
+  .DFS("-cat", file, henv)
 }
 
 DFS_tail <- function(file, n = 6L, size = 1024, henv = hive() ){
@@ -157,16 +157,16 @@ DFS_tail <- function(file, n = 6L, size = 1024, henv = hive() ){
 }
 
 # Load local files into hadoop and distribute them along its nodes
-DFS_put <- function( files, to = ".", henv = hive() ) {
+DFS_put <- function( files, path = ".", henv = hive() ) {
   if(length(files) == 1)
-    status <- .DFS("-put", paste(files, to), henv )
+    status <- .DFS("-put", paste(files, path), henv )
   else {
-    if( !DFS_dir_exists(to, henv) )
-      DFS_dir_create( to, henv )
-    status <- .DFS("-put", paste(paste(files, collapse = " "), to), henv )
+    if( !DFS_dir_exists(path, henv) )
+      DFS_dir_create( path, henv )
+    status <- .DFS("-put", paste(paste(files, collapse = " "), path), henv )
   }
   if( status ){
-    warning( sprintf("Cannot put file(s) to '%s'.", to) )
+    warning( sprintf("Cannot put file(s) to '%s'.", path) )
     return( invisible(FALSE) )
   }
   invisible( TRUE )
@@ -183,7 +183,7 @@ DFS_put_object <- function( obj, file, henv = hive() ) {
 }
 
 ## worse performance than read_lines2, reason: paste
-DFS_write_lines <- function( text, file, henv = hive(), ... ) {
+DFS_write_lines <- function( text, file, henv = hive() ) {
   if(DFS_file_exists(file)){
     warning(sprintf("file '%s' already exists.", file))
     return(NA)
@@ -205,68 +205,43 @@ DFS_write_lines <- function( text, file, henv = hive(), ... ) {
   invisible(file)
 }
 
-DFS_write_lines2 <- function( text, file, henv = hive(), ... ) {
-  con <- .DFS_pipe( "-put", file, open = "w", henv = henv )
-  status <- tryCatch( writeLines(text = text, con = con, ...), error = identity )
-  close.connection(con)
-  if(inherits(status, "error"))
-    stop("Cannot write to connection.")
-  invisible(file)
-}
-
-## TODO: DFS_read_lines3 should become the default -> a lot more efficient
-DFS_read_lines <- function( file, n = -1L, henv = hive(), ... ) {
-  if(!DFS_file_exists(file)){
-    warning(sprintf("file '%s' does not exists.", file))
-    return(NA)
-  }
-  hdfs <- HDFS(henv)
-  
-  inputstream <- hdfs$open(HDFS_path(file))
-  ## FIXME: allocate vector before reading from inputstream
-  out <- character()
-  if( n <= 0 ){
-    i <- 1
-    while( (! is.null(input))  ){
-      input <- inputstream$readLine()
-      out <- c(out, input)
-      i <- i + 1
+## TODO: there is a line reader class provided by Hadoop, see also
+## http://hadoop.apache.org/common/docs/r0.20.1/api/org/apache/hadoop/util/LineReader.html
+##       cannot instantiate using LineReader <- .jnew("org/apache/hadoop/util/LineReader")
+DFS_read_lines <- function( file, n = -1L, henv = hive() ) {
+    if(!DFS_file_exists(file)){
+        warning(sprintf("file '%s' does not exists.", file))
+        return(NA)
     }
-  }
-  else
-    for(i in 1:n)
-      out[i] <- inputstream$readLine()
-  inputstream$close()
-  out
+    hdfs <- HDFS(henv)
+    ioutils <- IOUTILS(henv)
+    offset <- 0
+    inputstream <- hdfs$open(HDFS_path(file))
+    if( n <= 0 ){
+        inputstream$seek(.jlong(offset))
+        
+        ## we need to copy the contents of the file to an output stream
+        ## Thus, for the time being we use the JRI class to RConsoleOutputStream divert
+        ## the outputstream to the R console
+        routput <- .jnew("org/rosuda/JRI/RConsoleOutputStream", .jengine(TRUE), as.integer(0))
+        ## now we need to capture the contents from the console usingg a text connection
+        ## we save the results in the object out
+        con <- textConnection("out", open = "w")
+        sink(file = con)
+        ioutils$copyBytes(inputstream, routput, as.integer(1024), TRUE)
+        sink()
+        close(con)
+        #inputstream$close()
+    }
+    else {
+        out <- character(n)
+        for(i in 1:n)
+            out[i] <- inputstream$readLine()
+        inputstream$close()
+    }
+    out
 }
-
-DFS_read_lines3 <- function( file, n = -1L, henv = hive(), ... ) {
-  if(!DFS_file_exists(file)){
-    warning(sprintf("file '%s' does not exists.", file))
-    return(NA)
-  }
-  hdfs <- HDFS(henv)
-  ioutils <- IOUTILS(henv)
-  offset <- 0
-  inputstream <- hdfs$open(HDFS_path(file))
-  inputstream$seek(.jlong(offset))
-
-  ## we need to copy the contents of the file to an output stream
-  ## Thus, for the time being we use the JRI class to RConsoleOutputStream divert
-  ## the outputstream to the R console
-  routput <- .jnew("org/rosuda/JRI/RConsoleOutputStream", .jengine(TRUE), as.integer(0))
-  ## now we need to capture the contents from the console usingg a text connection
-  ## we save the results in the object out
-  con <- textConnection("out", open = "w")
-  sink(file = con)
-  ioutils$copyBytes(inputstream, routput, as.integer(1024), TRUE)
-  sink()
-  close(con)
-
-  #inputstream$close()
-  out
-}
-
+  
 ## serialize R object from DFS
 DFS_get_object <- function( file, henv = hive() ) {
   con <- .DFS_pipe( "-cat", file, open = "r", henv = henv )

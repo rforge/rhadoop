@@ -15,7 +15,7 @@
 ## See also .create_hive_from_installation.
 ## Returns on object of class 'hive'.
 hive_create <- function( hadoop_home ){
-  hive <- .create_hive_from_installation( hadoop_home )
+  hive <- .create_hive_from_installation( file_path_as_absolute(hadoop_home) )
   hive_set_nreducer( hive_default_nreducer(hive), hive )
   class( hive ) <- "hive"
   hive
@@ -36,8 +36,8 @@ hive_create <- function( hadoop_home ){
           hadoop <- file.path(hadoop_home, "bin", "hadoop")
           version <- hvers
           stopifnot(file.exists(hadoop))
-          config_files <- list(hadoop_default = get_hadoop_config("hadoop-default.xml", file.path(hadoop_home, "conf")),
-                                hadoop_site = get_hadoop_config("hadoop-site.xml", file.path(hadoop_home, "conf")),
+          config_files <- list(hadoop_default = get_hadoop_config("hadoop-default.xml", file.path(hadoop_home,"conf")),
+                               hadoop_site = get_hadoop_config("hadoop-site.xml", file.path(hadoop_home,"conf")),
                                 slaves = readLines(file.path(hadoop_home, "conf", "slaves")),
                                 masters = readLines(file.path(hadoop_home, "conf", "masters")))
       }, hive )
@@ -54,6 +54,8 @@ hive_create <- function( hadoop_home ){
                                 mapred_site = get_hadoop_config("mapred-site.xml", file.path(hadoop_home, "conf")),
                                 slaves = readLines(file.path(hadoop_home, "conf", "slaves")),
                                 masters = readLines(file.path(hadoop_home, "conf", "masters")))
+          hadoop_jars <- c(file.path(hadoop_home, sprintf("hadoop-%s-core.jar", version)), file.path(hadoop_home, "lib", "commons-logging-1.0.4.jar"))
+
       }, hive )
   }
   hive
@@ -72,27 +74,38 @@ hive_is_valid <- function( henv ){
 ## Provides information about the "hive"
 print.hive <- function( x, ... ){
   writeLines( "HIVE: Hadoop Cluster" )
-  writeLines( sprintf("- Hadoop version: %s", hadoop_version(hive(x))) )
-  writeLines( sprintf("- Hadoop home directory: %s", hadoop_home(x)) )
-  writeLines( sprintf("- Namenode: %s", hive_get_masters(x)) )
-  writeLines( sprintf("- Avail. datanodes: %d", length(hive_get_slaves(x))) )  
+  writeLines( sprintf("- Avail. datanodes: %d", length(hive_get_slaves(x))) )
+  writeLines( sprintf("'- Max. number Map tasks per datanode: %s",
+                      hive_get_parameter("mapred.tasktracker.map.tasks.maximum", x)) )
+  writeLines( sprintf("'- Configured Reducer tasks: %d",
+                      hive_get_nreducer(x)) )
+}
+
+summary.hive <- function( object, ... ){
+    print(object)
+    writeLines( "---" )
+    writeLines( sprintf("- Hadoop version: %s", hadoop_version(hive(object))) )
+    writeLines( sprintf("- Hadoop home directory: %s", hadoop_home(object)) )
+    writeLines( sprintf("- Namenode: %s", hive_get_masters(object)) )
+    writeLines( "- Datanodes:")
+    writeLines( sprintf("'- %s\n", hive_get_slaves(object)) )
 }
 
 ## Start and stop a Hadoop cluster.
 ## NOTE: Java DFS support is only available for the current cluster.
 ##       Thus, add/remove DFS support in each call to hive_start/stop
 hive_start <- function( henv = hive() ){
-  if( hive_is_available(henv) )
-    return( invisible(TRUE) )
-  hadoop_framework_control( "start", henv )
-  status <- add_java_DFS_support( henv = hive() )
-  ## if there are problems starting hive, close it
-  if( !status ){
-    # writeLines(msg)
-    suppressWarnings( hive_stop(henv) )
-    return( invisible(FALSE) )
-  }
-  invisible( TRUE )
+    if( hive_is_available(henv) )
+        return( invisible(TRUE) )
+    status <- add_java_DFS_support( henv = hive() )
+    ## if there are problems starting hive, close it
+    if( !status ){
+        # writeLines(msg)
+        suppressWarnings( hive_stop(henv) )
+        return( invisible(FALSE) )
+    }
+    hadoop_framework_control( "start", henv )
+    invisible( TRUE )
 }
 
 hive_stop <- function( henv = hive() ){
@@ -111,12 +124,12 @@ hive_is_available <- function( henv = hive() ){
   suppressWarnings( DFS_is_available(henv) )
 }
 
-hive_get_nreducer <- function( henv =hive() ){
+hive_get_nreducer <- function( henv = hive() ){
   get( "nreducer", henv )
 }
 
-hive_set_nreducer <- function(nreducer, henv = hive() ) {
-  assign( "nreducer", as.integer(nreducer), henv )
+hive_set_nreducer <- function( n, henv = hive() ) {
+  assign( "nreducer", as.integer(n), henv )
 }
 
 hive_default_nreducer <- function( henv = hive() ){
@@ -132,6 +145,9 @@ hadoop_home <- function( henv )
 
 hadoop_version <- function( henv )
   get( "version", henv )
+
+hadoop_get_jars <- function( henv )
+  get( "hadoop_jars", henv )
 
 hadoop_get_version <- function( hadoop_home ){
   version <- readLines( file.path(hadoop_home, "contrib", "hod", "bin", "VERSION") )

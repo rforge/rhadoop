@@ -5,12 +5,13 @@
 \alias{DFS_dir_exists}
 \alias{DFS_dir_remove}
 \alias{DFS_file_exists}
-\alias{DFS_format}
 \alias{DFS_get_object}
 \alias{DFS_list}
 \alias{DFS_put}
 \alias{DFS_put_object}
+\alias{DFS_read_lines}
 \alias{DFS_tail}
+\alias{DFS_write_lines}
 
 \title{Hadoop Distributed File System}
 \description{
@@ -25,26 +26,32 @@ DFS_dir_create( path, henv = hive() )
 DFS_dir_exists( path, henv = hive() )
 DFS_dir_remove( path, recursive = TRUE, henv = hive() )
 DFS_file_exists( file, henv = hive() )
-DFS_format( henv )
 DFS_get_object( file, henv = hive() )
+DFS_read_lines( file, n = -1L, henv = hive() )
 DFS_list( path = ".", henv = hive() )
-DFS_tail( file, con = stdout(), henv = hive() )
-DFS_put( files, to = ".", henv = hive() )
+DFS_tail( file, n = 6L, size = 1024L, henv = hive() )
+DFS_put( files, path = ".", henv = hive() )
 DFS_put_object( obj, file, henv = hive() )
-
+DFS_write_lines( text, file, henv = hive() )
 }
 \arguments{
   \item{henv}{Hadoop local environment.}
-  \item{file}{a character string representing a file in the DFS.}
-  \item{files}{a character string representing files to be copied to the DFS.}
+  \item{file}{a character string representing a file on the DFS.}
+  \item{files}{a character string representing files to be copied to the
+    DFS.}
+  \item{n}{an integer specifying the number of lines to read.}
   \item{obj}{an R object to be serialized to/from the DFS.}
   \item{path}{a character string representing a full path name in the
     DFS (without the leading \code{hdfs://}); for many functions the
     default corresponds to the user's home directory in the DFS.}
   \item{recursive}{logical. Should elements of the path other than the last be
     deleted recursively?}
+  \item{size}{an integer specifying the number of bytes to be read. Must
+  be sufficiently large otherwise \code{n} does not have the desired effect.}
+  \item{text}{a (vector of) character string(s) to be written to the DFS.}
   \item{con}{A connection to be used for printing the output provided by
-    \code{cat}. Default: standard output connection}
+    \code{cat}. Default: standard output connection, has currently no
+    other effect}
 }
 \details{
   The Hadoop Distributed File System (HDFS) is typically part of a Hadoop
@@ -69,18 +76,29 @@ DFS_put_object( obj, file, henv = hive() )
   argument and if \code{recursive} is set to \code{TRUE} also attempts
   to remove subdirectories in a recursive manner.
 
-  \code{DFS_format} attempts to completely format the HDFS. This also
-  involves a manual restart of the Hadoop framework after the namenode
-  as been formated. Note that this command is dangerous as all of the
-  data stored in the DFS will be lost.
+%  \code{DFS_format} attempts to completely format the HDFS. This also
+%  involves a manual restart of the Hadoop framework after the namenode
+%  as been formated. Note that this command is dangerous as all of the
+%  data stored in the DFS will be lost.
 
   \code{DFS_list} produces a character vector of the names of files
   in the directory named by its argument.
 
+  \code{DFS_read_lines} is a reader for (plain text) files stored on the
+  DFS. It returns a vector of character strings representing lines in
+  the (text) file. If \code{n} is given as an argument it reads that
+  many lines from the given file. It's behaviour is similar to the base
+  function \code{readLines}.
+
   \code{DFS_put} copies files named by its argument to a given path in
   the DFS.
 
-  \code{DFS_put_object} serializes an R object to the DFS.  
+  \code{DFS_put_object} serializes an R object to the DFS.
+
+  \code{DFS_write_lines} writes a given vector of character strings to a
+  file stored on the DFS. It's behaviour is similar to the base
+  function \code{writeLines}.
+
 }
 \value{
   \code{DFS_dir_create} returns a logical value indicating if the 
@@ -105,13 +123,11 @@ DFS_put_object( obj, file, henv = hive() )
 %  \pkg{HadoopStreaming}
 %}
 \examples{
-## Do we have access to root in the DFS?
-status <- DFS_dir_exists("/")
-status
+## Do we have access to the root tree of the DFS?
+\dontrun{DFS_dir_exists("/")}
 
 ## If so, list the contents.
-if(status)
-  DFS_list()
+\dontrun{DFS_list("/")}
 
 }
 %%\keyword{hpc}
