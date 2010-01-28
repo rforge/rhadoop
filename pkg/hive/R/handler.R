@@ -21,10 +21,10 @@ hive_create <- function( hadoop_home ){
   hive
 }
 
-## Given a pointer to a Hadoop installation directory, this function creates an environment
-## containing all information about the Hadoop cluster.
-## We store the hadoop home directory, the hadoop version, and the parsed configuration files
-## in a separate R environment.
+## Given a pointer to a Hadoop installation directory, this function
+## creates an environment containing all information about the Hadoop
+## cluster.  We store the hadoop home directory, the hadoop version,
+## and the parsed configuration files in a separate R environment.
 .create_hive_from_installation <- function( hadoop_home ){
   if( !file.exists(hadoop_home) )
     stop( sprintf("There is no directory '%s'.", hadoop_home) )
@@ -95,8 +95,12 @@ summary.hive <- function( object, ... ){
 ## NOTE: Java DFS support is only available for the current cluster.
 ##       Thus, add/remove DFS support in each call to hive_start/stop
 hive_start <- function( henv = hive() ){
-    if( hive_is_available(henv) )
+    if( DFS_is_registered(henv) )
         return( invisible(TRUE) )
+    ## does nothing if hadoop daemons already running
+    hadoop_framework_control( "start", henv )
+    ## NOTE: really important that java DFS support is added AFTER
+    ## framework has been started
     status <- add_java_DFS_support( henv = hive() )
     ## if there are problems starting hive, close it
     if( !status ){
@@ -104,12 +108,11 @@ hive_start <- function( henv = hive() ){
         suppressWarnings( hive_stop(henv) )
         return( invisible(FALSE) )
     }
-    hadoop_framework_control( "start", henv )
     invisible( TRUE )
 }
 
 hive_stop <- function( henv = hive() ){
-  if( hive_is_available(henv) ){
+  if( DFS_is_registered(henv) ){
     remove_java_DFS_support( henv )
     hadoop_framework_control( "stop", henv )
   }
@@ -120,9 +123,10 @@ hive_stop <- function( henv = hive() ){
 
 ## FIXME: Very simple query of hadoop status. Probably better to use pid?
 hive_is_available <- function( henv = hive() ){
-  stopifnot( hive_is_valid(henv) )
-  suppressWarnings( DFS_is_available(henv) )
+    stopifnot( hive_is_valid(henv) )
+    suppressWarnings( DFS_is_available(henv) )
 }
+
 
 hive_get_nreducer <- function( henv = hive() ){
   get( "nreducer", henv )

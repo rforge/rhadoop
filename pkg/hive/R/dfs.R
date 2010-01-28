@@ -1,37 +1,30 @@
 ## Functions related to the Hadoop Distributed File System (HDFS)
 ## Author: Stefan Theussl
 
-## use with caution
-## FIXME: not working yet, too dangerous
-.DFS_format <- function(henv){
-  ##machines, DFS_root= "/var/tmp/hadoop"
-  stopifnot(hive_stop(henv))
-  machines <- unique(c(hive_get_slaves(henv), hive_get_masters(henv)))
-  DFS_root <- gsub("\\$\\{user.name\\}", system("whoami", intern = TRUE),
-                   hive_get_parameter("hadoop.tmp.dir", henv))
-  for(machine in machines){
-    ## delete possibly corrupted file system
-    command <- sprintf("ssh %s 'rm -rf %s/*
-rm -rf %s-*' ", machine, DFS_root, DFS_root)
-    system(command)
-  }
-  # reformat DFS
-  system(sprintf("%s namenode -format", hadoop(henv)))
-}
-
 ## out of simplicity queries status of / in DFS (Java)
 DFS_is_available <- function( henv = hive() ) {
-  
-  stat <- .DFS_stat( "/", henv )
-  if( is.null(stat) || is.na(stat) )
-    return( FALSE )
-  TRUE
+    ## first check if DFS is registered
+    if( DFS_is_registered(henv) ){
+        ## then check if we can access DFS
+        stat <- .DFS_stat( "/", henv )
+        if( !(is.null(stat) || is.na(stat)) )
+            return( TRUE )
+    }
+    FALSE
+}
+
+DFS_is_registered <- function(henv = hive()){
+    if( is.null(HDFS(henv)) || is.null(IOUTILS(henv)) ){
+        return(FALSE)
+    }
+    TRUE
 }
 
 ## does file exist in DFS? (Java)
 DFS_file_exists <- function( file, henv = hive() ) {
-  hdfs <- HDFS(henv)
-  hdfs$exists(HDFS_path(file))
+    stopifnot(DFS_is_registered(henv))
+    hdfs <- HDFS(henv)
+    hdfs$exists(HDFS_path(file))
 }
 
 ## does dir exist in DFS? (Java)
@@ -131,29 +124,29 @@ DFS_tail <- function(file, n = 6L, size = 1024, henv = hive() ){
 }
 
 .DFS_tail <- function(file, size = 1024, henv = hive()){
-  hdfs <- HDFS(henv)
-  ioutils <- IOUTILS(henv)
+    stopifnot(DFS_is_registered(henv))
+    hdfs <- HDFS(henv)
+    ioutils <- IOUTILS(henv)
   
-  hdfs_file <- HDFS_path(file)
-  len <- hdfs$getFileStatus(hdfs_file)$getLen()
-  offset <- ifelse(len > size, len - size, 0)
+    hdfs_file <- HDFS_path(file)
+    len <- hdfs$getFileStatus(hdfs_file)$getLen()
+    offset <- ifelse(len > size, len - size, 0)
 
+    inputstream <- hdfs$open(hdfs_file)
+    inputstream$seek(.jlong(offset))
 
-  inputstream <- hdfs$open(hdfs_file)
-  inputstream$seek(.jlong(offset))
-
-  ## we need to copy the contents of the file to an output stream
-  ## Thus, for the time being we use the JRI class to RConsoleOutputStream divert
-  ## the outputstream to the R console
-  routput <- .jnew("org/rosuda/JRI/RConsoleOutputStream", .jengine(TRUE), as.integer(0))
-  ## now we need to capture the contents from the console usingg a text connection
-  ## we save the results in the object out
-  con <- textConnection("out", open = "w")
-  sink(file = con)
-  ioutils$copyBytes(inputstream, routput, as.integer(1024), TRUE)
-  sink()
-  close(con)
-  out
+    ## we need to copy the contents of the file to an output stream
+    ## Thus, for the time being we use the JRI class to RConsoleOutputStream divert
+    ## the outputstream to the R console
+    routput <- .jnew("org/rosuda/JRI/RConsoleOutputStream", .jengine(TRUE), as.integer(0))
+    ## now we need to capture the contents from the console usingg a text connection
+    ## we save the results in the object out
+    con <- textConnection("out", open = "w")
+    sink(file = con)
+    ioutils$copyBytes(inputstream, routput, as.integer(1024), TRUE)
+    sink()
+    close(con)
+    out
 }
 
 # Load local files into hadoop and distribute them along its nodes
@@ -184,25 +177,25 @@ DFS_put_object <- function( obj, file, henv = hive() ) {
 
 ## worse performance than read_lines2, reason: paste
 DFS_write_lines <- function( text, file, henv = hive() ) {
-  if(DFS_file_exists(file)){
-    warning(sprintf("file '%s' already exists.", file))
-    return(NA)
-  }
-
-  if(!length(text))
-    stop("text length of zero not supported.")
-  
-  hdfs <- HDFS(henv)
-  
-  outputstream <- hdfs$create(HDFS_path(file))
-#  outputstream$write(text)
-  for( i in seq_along(text) ){
-    outputstream$writeBytes(text[i])
-    outputstream$writeBytes("\n")
-  }
-  outputstream$close()
-
-  invisible(file)
+    stopifnot(DFS_is_registered(henv = henv))
+    if(DFS_file_exists(file)){
+        warning(sprintf("file '%s' already exists.", file))
+        return(NA)
+    }
+    
+    if(!length(text))
+        stop("text length of zero not supported.")
+    
+    hdfs <- HDFS(henv)
+    
+    outputstream <- hdfs$create(HDFS_path(file))
+    for( i in seq_along(text) ){
+        outputstream$writeBytes(text[i])
+        outputstream$writeBytes("\n")
+    }
+    outputstream$close()
+    
+    invisible(file)
 }
 
 ## TODO: there is a line reader class provided by Hadoop, see also
@@ -256,39 +249,39 @@ DFS_get_object <- function( file, henv = hive() ) {
 ## returns TRUE if successful and FALSE otherwise
 ## caution: always deletes recursively!
 .DFS_delete <- function(x, henv){
-   hdfs <- HDFS(henv)
-   hdfs$delete(HDFS_path(x))
+    stopifnot( DFS_is_registered(henv) )
+    hdfs <- HDFS(henv)
+    hdfs$delete(HDFS_path(x))
 }
 
 ## creates directory on DFS
 ## returns TRUE if successful and NULL otherwise
 .DFS_mkdir <- function(x, henv){
-  hdfs <- HDFS(henv)
-  hdfs$mkdirs(HDFS_path(x))
+    stopifnot( DFS_is_registered(henv) )
+    hdfs <- HDFS(henv)
+    hdfs$mkdirs(HDFS_path(x))
 }
 
 .DFS_stat <- function(x, henv){
-  hdfs <- HDFS(henv)
-  if(is.null(hdfs)){
-    warning("no HDFS found in Hadoop environment")
-    return(NA)
-  } 
-  stat <- hdfs$globStatus(HDFS_path(x))
-  if(is.null(stat)){
-    warning(sprintf("cannot stat '%s': No such file or directory", x))
-    return(NULL)
-  }
-  ## for the time being return TRUE
-  ## TODO: this should return an R object containing the stat information 
-  TRUE
+    stopifnot( DFS_is_registered(henv) )
+    hdfs <- HDFS(henv) 
+    stat <- hdfs$globStatus(HDFS_path(x))
+    if(is.null(stat)){
+        warning(sprintf("cannot stat '%s': No such file or directory", x))
+        return(NULL)
+    }
+    ## for the time being return TRUE
+    ## TODO: this should return an R object containing the stat information 
+    TRUE
 }
 
 .DFS_getFileStatus <- function(x, henv){
-  hdfs <- HDFS(henv)
-  hdfs$getFileStatus(HDFS_path(x))
+    stopifnot( DFS_is_registered(henv) )
+    hdfs <- HDFS(henv)
+    hdfs$getFileStatus(HDFS_path(x))
 }
 
-############################################################
+################################################################################
 ## Old command line wrappers
 ## FIXME: all of them have to be replaced by Java routines
 
@@ -307,3 +300,22 @@ DFS_get_object <- function( file, henv = hive() ) {
 
 .DFS_create_command <- function( cmd, args, henv )
   sprintf("%s fs %s %s", hadoop(henv), cmd, args)
+
+################################################################################
+## use with caution
+## FIXME: not working yet, too dangerous
+.DFS_format <- function(henv){
+  ##machines, DFS_root= "/var/tmp/hadoop"
+  stopifnot(hive_stop(henv))
+  machines <- unique(c(hive_get_slaves(henv), hive_get_masters(henv)))
+  DFS_root <- gsub("\\$\\{user.name\\}", system("whoami", intern = TRUE),
+                   hive_get_parameter("hadoop.tmp.dir", henv))
+  for(machine in machines){
+    ## delete possibly corrupted file system
+    command <- sprintf("ssh %s 'rm -rf %s/*
+rm -rf %s-*' ", machine, DFS_root, DFS_root)
+    system(command)
+  }
+  # reformat DFS
+  system(sprintf("%s namenode -format", hadoop(henv)))
+}
