@@ -1,11 +1,11 @@
 \name{TermDocumentMatrix.DistributedCorpus}
 \alias{TermDocumentMatrix.DistributedCorpus}
-\title{Term-Document Matrix}
+\title{Term-Document Matrix from Distributed Corpora}
 \description{
-  Constructs a term-document matrix.
+  Constructs a term-document matrix given a distributed corpus.
 }
 \usage{
-TermDocumentMatrix(x, control = list())
+\method{TermDocumentMatrix}{DistributedCorpus}(x, control = list())
 }
 \arguments{
   \item{x}{A distributed corpus.}
@@ -19,6 +19,12 @@ TermDocumentMatrix(x, control = list())
   An object of class \code{TermDocumentMatrix} containing a sparse
   term-document matrix. The attribute \code{Weighting} contains the
   weighting applied to the matrix.
+}
+\examples{
+data("crude")
+tdm <- TermDocumentMatrix(as.DistributedCorpus(crude),
+control = list(weighting = weightTfIdf, stopwords = TRUE))
+inspect(tdm[155:160,1:5])
 }
 \seealso{
   The documentation of \code{\link[tm]{termFreq}} gives an extensive list of
