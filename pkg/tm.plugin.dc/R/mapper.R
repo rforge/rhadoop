@@ -70,8 +70,8 @@ function(x, FUN, ..., useMeta = FALSE, lazy = FALSE) {
                         paste(paste(sample(c(letters, 0:9), 10, replace = TRUE),
                                     collapse = ""),
                               system("hostname", intern = TRUE), sep = "-"),
-                        dc_serialize_object(c(First_key = firstkey,
-                                              Last_key  = input$key))),
+                        dc_serialize_object(c(First_key = as.integer(firstkey),
+                                           Last_key  = as.integer(input$key)))),
                con2 )
     close(con)
     close(con2)
@@ -111,8 +111,8 @@ function(x, FUN, ..., useMeta = FALSE, lazy = FALSE) {
     ## <key:randomstring, value_serialized:c(firstdocumentkey,lastdocumentkey)>
     mapred_write_output(paste(paste(sample(c(letters, 0:9), 10, replace = TRUE),
                              collapse = ""), system("hostname", intern = TRUE), sep = "-"),
-                        c(First_key = firstkey,
-                    Last_key = input$key))
+                        c(First_key = as.integer(firstkey),
+                          Last_key  = as.integer(input$key)))
     close(con)
   }
 }

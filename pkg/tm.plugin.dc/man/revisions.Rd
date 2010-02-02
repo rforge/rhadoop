@@ -18,7 +18,7 @@ setRevision( corpus, revision )
   \item{revision}{The revision which is to be set as active.}
 }
 \value{
-  Whereas \code{getRevisions()} returns a character vector naming all
+  Whereas \code{getRevisions()} returns a list of character strings naming all
   available revisions, \code{setRevision()} returns the distributed
   corpus with the given revision marked as active.
 }

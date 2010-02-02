@@ -37,6 +37,8 @@ control <- list( removePunctuation = TRUE,
                  stemming = TRUE,
                  stopwords = TRUE )
 
+## we need do set the revision back to the original
+dc <- setRevision(dc, getRevisions(dc)[[1]])
 tdm_dc <- TermDocumentMatrix(dc, control = control )
 tdm_c <- TermDocumentMatrix(crude, control = control )
 stopifnot( all(sort(Terms(tdm_dc)) == sort(Terms(tdm_c))) )
@@ -45,31 +47,31 @@ stopifnot( all(row_sums(tdm_dc)[Terms(tdm_c)] == row_sums(tdm_c)) )
 ## -> Reuters: build distributed corpus
 ################################################################################
 
-input <- "~/Data/Reuters/reuters_xml"
-run_time_dc <-
-    system.time(
-                dc <- DistributedCorpus(DirSource(input),
-                         readerControl = list(reader = readReut21578XMLasPlain))
-                )["elapsed"]
-run_time_c <-
-    system.time(
-                reuters <- Corpus(DirSource(input),
-                         readerControl = list(reader = readReut21578XMLasPlain))
-)["elapsed"]
-c(distributed = run_time_dc, local = run_time_c)
+##input <- "~/Data/Reuters/reuters_xml"
+##run_time_dc <-
+#    system.time(
+#                dc <- DistributedCorpus(DirSource(input),
+#                        readerControl = list(reader = readReut21578XMLasPlain))
+#                )["elapsed"]
+#run_time_c <-
+#    system.time(
+#                reuters <- Corpus(DirSource(input),
+#                         readerControl = list(reader = readReut21578XMLasPlain))
+#)["elapsed"]
+#c(distributed = run_time_dc, local = run_time_c)
 
 ## first 25 documents
-stopifnot( all(sapply(1:25, function(x) identical(reuters[[x]], dc[[x]]))) )
+#stopifnot( all(sapply(1:25, function(x) identical(reuters[[x]], dc[[x]]))) )
 
 ## last 25 documents
-stopifnot( all(sapply((length(reuters)-25):length(reuters),
-                      function(x) identical(reuters[[x]], dc[[x]]))) )
+#stopifnot( all(sapply((length(reuters)-25):length(reuters),
+#                      function(x) identical(reuters[[x]], dc[[x]]))) )
 
 ## -> Reuters: preprocess distributed corpus
 ################################################################################
 
-dc <- tm_map(dc, stemDocument)
-reuters_stemmed <- tm_map(reuters, stemDocument)
+#dc <- tm_map(dc, stemDocument)
+#reuters_stemmed <- tm_map(reuters, stemDocument)
 
 ################################################################################
 ## Hadoop distributed filesystem (HDFS) storage
@@ -99,4 +101,18 @@ hdc <- tm_map(hdc, stemDocument)
 crude_stemmed <- tm_map(crude, stemDocument)
 ## check if dc and classic corpus contain the same documents after preprocessing
 stopifnot( all(sapply(seq_len(length(crude)),
-                      function(x) identical(crude_stemmed[[x]], dc[[x]]))) )
+                      function(x) identical(crude_stemmed[[x]], hdc[[x]]))) )
+
+## -> crude: construct TermDocumentMatrix
+################################################################################
+
+require("slam")
+control <- list( removePunctuation = TRUE,
+                 removeNumbers = TRUE,
+                 stemming = TRUE,
+                 stopwords = TRUE )
+
+tdm_hdc <- TermDocumentMatrix(hdc, control = control )
+tdm_c <- TermDocumentMatrix(crude, control = control )
+stopifnot( all(sort(Terms(tdm_hdc)) == sort(Terms(tdm_c))) )
+stopifnot( all(row_sums(tdm_hdc)[Terms(tdm_c)] == row_sums(tdm_c)) )

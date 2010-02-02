@@ -34,9 +34,9 @@ TermDocumentMatrix.DistributedCorpus <- function( x, control = list() ){
 }
 
 .local_disk_TDM_mapreducer <- function( control, input, output){
-    con <- file(input, open = "r")
+    con  <- file( input, open = "r" )
     con2 <- file( output, open = "w" )
-    out <- list(tm:::.TermDocumentMatrix())
+    out  <- list( tm:::.TermDocumentMatrix() )
     while (length(line <- readLines(con, n = 1L, warn = FALSE)) > 0) {
         input <- dc_split_line(line)
         ## in the TDM mapper we apply termFreq on the documents,
