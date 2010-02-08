@@ -1,0 +1,12 @@
+#!/bin/bash
+## Prepare NYT corpus
+## Construct distributed corpus
+
+#$ -N NYparprepare -t 1:30
+#$ -q node.q
+#$ -m bea 
+#$ -M stefan.theussl@wu.ac.at
+
+## copy corpus to local file system
+hostname
+R --vanilla < NYT_builder.R
