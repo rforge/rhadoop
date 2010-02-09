@@ -2,11 +2,11 @@
 ## Prepare NYT corpus
 ## Construct distributed corpus
 
-#$ -N NYparprepare -t 1:30
+#$ -N NYTbuilder -t 1:30
 #$ -q node.q
 #$ -m bea 
 #$ -M stefan.theussl@wu.ac.at
 
 ## copy corpus to local file system
 hostname
-R --vanilla < NYT_builder.R
+R --vanilla < /home/stheussl/svn/RHadoop/pkg/tm.plugin.dc/Work/NYT_builder.R

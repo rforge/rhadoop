@@ -6,14 +6,14 @@ ntasks <- 30L
 
 ## Configuration
 src_dir <- "~/Data/nyt"
-stor_dir <- "/scratch/hadoop/storage"
+stor_dir <- "/scratch/hadoop"
 
 ## NYT Corpus (FileList)
-ds_file <- "~/Data/nyt/nyt_ds.Rda"
+ds_file <- file.path(src_dir, "nyt_ds.Rda")
 if( !file.exists(ds_file) ){
   ds <- make_dir_source_from_gz(src_dir     = src_dir,
                                 gzfile      = "nyt_xml.tar.gz",
-                                base_dir    = "/scratch/hadoop",
+                                base_dir    = stor_dir,
                                 prefix      = "nyt")
   save(ds, file = ds_file, compress = TRUE)
 }
@@ -23,7 +23,7 @@ file_list <- ds
 ## prepare corpus in a distributed way
 nyt_data <- build_distributed_corpus_subset_from_xml(src_dir     = src_dir,
                                                      gzfile      = "nytimes_xml.tar.gz",
-                                                     base_dir    = "/scratch/hadoop",
+                                                     base_dir    = stor_dir,
                                                      prefix      = "nyt",
                                                      file_list   = file_list,
                                                      n           = ntasks,

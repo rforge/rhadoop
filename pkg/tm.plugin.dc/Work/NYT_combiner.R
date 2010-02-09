@@ -1,3 +1,5 @@
+source("dc_builder.R")
+
 ## Configuration
 src_dir <- "~/Data/nyt"
 stor_dir <- "/scratch/hadoop/storage"
@@ -18,4 +20,4 @@ dc <- aggregate_distributed_corpus_subsets(dc_subsets = dc_subsets,
 
 save(dc, file="~/Data/nyt/dc.Rda", compress = TRUE)
 
-system(sprintf("tar czf %s %s", file.path(src_dir, "dc_complete.Rda"), stor_dir))
+system(sprintf("tar czf %s %s", file.path(src_dir, "dc_complete.tar.gz"), stor_dir))

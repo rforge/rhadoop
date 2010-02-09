@@ -111,9 +111,11 @@ function(src_dir,
   
   ## now prepare dc
   dc <- DistributedCorpus( src,
-                          readerControl = list(reader = reader) )
+                           readerControl = list(reader = reader),
+                           keys = which( file_list$FileList %in% src$FileList ))
 
-  outgz <- file.path( src_dir, sprintf("%s_dc_part_%d.tar.gz", prefix, id) )
+  ## FIXME: what to do if more than 99999 parts?
+  outgz <- file.path( src_dir, sprintf("%s_dc_part_%05d.tar.gz", prefix, id) )
   system( sprintf("tar czf %s %s", outgz, file.path(stor_dir, attr(dc, "ActiveRevision"))) )
   unlink( file.path(stor_dir, attr(dc, "ActiveRevision")), recursive = TRUE )
   ## return relevant objects

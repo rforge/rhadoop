@@ -20,7 +20,7 @@ DistributedCorpus <-
     function( source,
               readerControl = list(reader   = source$DefaultReader,
                                    language = "eng"),
-              storage = dcStorage(), ... ) {
+              storage = dcStorage(), keys = NULL, ... ) {
 
     if( !inherits(source, "DirSource") )
         stop("unsupported source type (use DirSource instead)")
@@ -30,7 +30,7 @@ DistributedCorpus <-
     dc_dir_create(storage, activeRev)
 
     ## Initialization
-    ## - key            -> uniquely identifies document in corpus
+    ## - keys           -> uniquely identifies document in corpus
     ## - chunk_iterator -> specifies the file chunk for each document
     ## - position       -> specifies the position of the document, i.e.,
     ##                     the row in the chunk
@@ -39,7 +39,10 @@ DistributedCorpus <-
     ##                     chunk and position of the given document
     ## - outlines       -> contains the current serialized documents to be
     ##                     written to the DFS
-    key <- 0L
+    if( is.null(keys) )
+      keys <- seq_along( source$FileList )
+    stopifnot( is.integer(keys) && (length(keys) == length(source$FileList)) )
+    ind <- 0L
     chunk_iterator <- 1L
     position <- 1L
     size <- 0L
@@ -54,16 +57,16 @@ DistributedCorpus <-
         elem <- getElem(source)
 
         ## construct key/value pairs and save mapping
-        key <- key + 1
-        mapping[key, ] <- c(chunk_iterator, position)
+        ind <- ind + 1
+        mapping[ind, ] <- c(chunk_iterator, position)
         position <- position + 1L
         ## create vector containing serialized documents as <key, value> pairs
         outlines <- c( outlines,
                       sprintf("%s\t%s",
-                              as.character(key),
+                              as.character(keys[ind]),
                               dc_serialize_object(readerControl$reader(elem,
                                                     readerControl$language,
-                                                    source$FileList[key]))) )
+                                                    source$FileList[ind]))) )
 
         ## write chunk if size greater than pre-defined chunksize
         if( object.size(outlines) >= dc_chunksize(storage) ) {
@@ -98,7 +101,7 @@ DistributedCorpus <-
                         cmeta = tm:::.MetaDataNode(),
                         dmeta = data.frame(MetaID = rep(0, source$Length),
                                            stringsAsFactors = FALSE),
-                        keys = source$FileList,
+                        keys = keys,
                         mapping = structure(list(mapping), names = activeRev),
                         revisions = list(activeRev))
 }
