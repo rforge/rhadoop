@@ -41,7 +41,7 @@ dc_split_line <- function( line ) {
 
 ## deserializes an object from a given character string
 dc_unserialize_object <- function( x )
-    unserialize( charToRaw(gsub("\\n", "\n", x, fixed = TRUE)) )
+    unserialize( charToRaw(gsub("\\\\n", "\n", x)) )
 
 ## takes the key and the corresponding value and creates a single
 ## <key, value> pair. The R object is serialized to a character string

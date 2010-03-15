@@ -13,9 +13,10 @@ TermDocumentMatrix.DistributedCorpus <- function( x, control = list() ){
     chunks <- file.path( rev,
                          grep("part-", dc_list_directory(storage, rev),
                               value =TRUE) )
-    do.call( c, lapply(chunks, function(x) {
-        object <- dc_read_lines(storage, x)
-        dc_unserialize_object( strsplit(object, "\t")[[ 1 ]][2] ) }) )
+    .fix_TDM( do.call( c, lapply(chunks, function(x) {
+      object <- dc_read_lines(storage, x)
+      dc_unserialize_object( strsplit(object, "\t")[[ 1 ]][2] ) }) ),
+             attr(x, "Keys") )
 }
 
 .dc_TermDocumentMatrix <- function(storage, x, control)
@@ -81,7 +82,6 @@ TermDocumentMatrix.DistributedCorpus <- function( x, control = list() ){
                           cmdenv_arg = cmdenv_arg)
     if( !is.null(cmdenv_arg) )
         unlink(control_file)
-
     rev
 }
 
@@ -165,10 +165,10 @@ TermDocumentMatrix.DistributedCorpus <- function( x, control = list() ){
             input <- split_line(line)
             out <- c(out,
                      list(tm:::.TermDocumentMatrix(i = seq_along(input$value),
-                                                   j = rep(1, length(input$value)),
+                                                   j = rep(1L, length(input$value)),
                                                    v = as.numeric(input$value),
                                                    nrow = length(input$value),
-                                                   ncol = 1,
+                                                   ncol = 1L,
                                                    dimnames = list(names(input$value),
                                                    input$key))))
 #      new <- tm:::.TermDocumentMatrix(i = seq_along(input$value),
@@ -186,3 +186,20 @@ TermDocumentMatrix.DistributedCorpus <- function( x, control = list() ){
         mapred_write_output(input$key, do.call(c, out))
   }
 }
+
+## FIXME: we can do this more efficiently
+.fix_TDM <- function(x, ids){
+  not_included <- ids[ ! (ids %in% Docs(x)) ]
+  x$ncol <- x$ncol + length( not_included )  
+  x$dimnames$Docs <- c(x$dimnames$Docs, as.character(not_included))
+  x <- x[, as.character(ids)]
+  x <- x[sort(Terms(x)), ]
+  names(x$dimnames) <- c("Terms", "Docs")
+  ## column major order
+  cmo <- order(x$j)
+  x$i <- x$i[cmo]
+  x$j <- x$j[cmo]
+  x$v <- x$v[cmo]
+  x
+}
+

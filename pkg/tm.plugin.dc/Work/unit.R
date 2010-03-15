@@ -116,3 +116,11 @@ tdm_hdc <- TermDocumentMatrix(hdc, control = control )
 tdm_c <- TermDocumentMatrix(crude, control = control )
 stopifnot( all(sort(Terms(tdm_hdc)) == sort(Terms(tdm_c))) )
 stopifnot( all(row_sums(tdm_hdc)[Terms(tdm_c)] == row_sums(tdm_c)) )
+
+#[sort(Terms(x)), ]
+#sort(terms)
+
+#sapply(seq_len(nDocs(tmp)), function(x) {
+#  r <- as.matrix(ReutersTDM[, x])
+#  t <- as.matrix(tmp[, x])
+#  identical(r[r > 0L], t[t > 0L])})

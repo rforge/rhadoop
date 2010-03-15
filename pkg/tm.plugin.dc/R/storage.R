@@ -61,12 +61,12 @@ dc_HDFS_storage <- function(henv = hive::hive()){
     dcs <- .dc_storage(description     = "Hadoop Distributed File System (HDFS)",
                        base_directory  = tempfile(),
                        chunksize       = 10 * 1024^2,
-                       dir_create      = function(x) hive::DFS_dir_create(x, henv = henv),
-                       fetch_last_line = function(x) hive::DFS_tail(n = 1L, as.character(x), henv = henv),
-                       list_directory  = function(x) hive::DFS_list(x, henv = henv),
-                       read_lines      = function(x) hive::DFS_read_lines(as.character(x), henv = henv),
-                       unlink          = function(x) hive::DFS_dir_remove(x, henv = henv),
-                       write_lines     = function(text, fil) hive::DFS_write_lines(text, as.character(fil), henv = henv)
+                       dir_create      = function(x) hive::DFS_dir_create(x, henv = hive()),
+                       fetch_last_line = function(x) hive::DFS_tail(n = 1L, as.character(x), henv = hive()),
+                       list_directory  = function(x) hive::DFS_list(x, henv = hive()),
+                       read_lines      = function(x) hive::DFS_read_lines(as.character(x), henv = hive()),
+                       unlink          = function(x) hive::DFS_dir_remove(x, henv = hive()),
+                       write_lines     = function(text, fil) hive::DFS_write_lines(text, as.character(fil), henv = hive())
                        )
     class(dcs) <- c( "HDFS", class(dcs) )
     dcs
