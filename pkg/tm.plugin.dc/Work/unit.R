@@ -44,9 +44,6 @@ tdm_c <- TermDocumentMatrix(crude, control = control )
 stopifnot( all(sort(Terms(tdm_dc)) == sort(Terms(tdm_c))) )
 stopifnot( all(row_sums(tdm_dc)[Terms(tdm_c)] == row_sums(tdm_c)) )
 
-## -> Reuters: build distributed corpus
-################################################################################
-
 ##input <- "~/Data/Reuters/reuters_xml"
 ##run_time_dc <-
 #    system.time(
@@ -117,10 +114,43 @@ tdm_c <- TermDocumentMatrix(crude, control = control )
 stopifnot( all(sort(Terms(tdm_hdc)) == sort(Terms(tdm_c))) )
 stopifnot( all(row_sums(tdm_hdc)[Terms(tdm_c)] == row_sums(tdm_c)) )
 
-#[sort(Terms(x)), ]
-#sort(terms)
+###############################################################################
+## Construct Reuters 21578 corpus via Hadoop
+## Using constructor DistributedCorpus()
+###############################################################################
 
-#sapply(seq_len(nDocs(tmp)), function(x) {
-#  r <- as.matrix(ReutersTDM[, x])
-#  t <- as.matrix(tmp[, x])
-#  identical(r[r > 0L], t[t > 0L])})
+hive_set_nreducer( 20 )
+
+tmp_dir <- "/work_local/hadoop/tmp"
+term_freq_control <- list( removePunctuation = TRUE,
+                           removeNumbers = TRUE,
+                           stemming = TRUE,
+                           stopwords = TRUE )
+
+dir.create( tmp_dir )
+input <- "~/Data/Reuters/reuters_xml.tar.gz"
+system( sprintf("tar xzf %s -C %s", input, tmp_dir) )
+xml <- file.path( tmp_dir, dir( tmp_dir ) )
+
+## Configure HDFS Storage
+storage <- tm.plugin.dc:::dc_HDFS_storage() 
+storage$chunksize <- 2 * 1024^2
+dcStorage( storage )
+
+## NOTE: we need 16 chunks to work with 16 CPUs, thus setting chunk size to 2.5 MB
+system.time( dcReuters <- DistributedCorpus(DirSource(xml),
+                        readerControl = list(reader = readReut21578XMLasPlain)) )
+## delete uncompressed sources
+unlink( tmp_dir, recursive = TRUE )
+
+## construct the distributed corpus
+system.time( ReutersTDM <- TermDocumentMatrix(dcReuters,
+                                              control = term_freq_control) )
+
+## compare hadoop results with classic result
+ReutersTDM_hadoop <- ReutersTDM
+library( "tm.corpus.Reuters" )
+data( "Reuters" )
+data( "ReutersTDM" )
+
+stopifnot( identical(ReutersTDM_hadoop, ReutersTDM) )

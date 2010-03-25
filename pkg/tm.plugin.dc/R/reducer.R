@@ -7,17 +7,40 @@ TermDocumentMatrix.DistributedCorpus <- function( x, control = list() ){
     ## (supplied with the control argument) and the reducer
     ## makes the TDMs
 
-    storage <- dc_get_corpus_storage(x)
-    rev <- .dc_TermDocumentMatrix( storage, x, control )
+    ## Start MapReduce job based on storage class
+    rev <- .dc_TermDocumentMatrix( dc_get_corpus_storage(x), x, control )
 
-    chunks <- file.path( rev,
-                         grep("part-", dc_list_directory(storage, rev),
-                              value =TRUE) )
-    .fix_TDM( do.call( c, lapply(chunks, function(x) {
-      object <- dc_read_lines(storage, x)
-      dc_unserialize_object( strsplit(object, "\t")[[ 1 ]][2] ) }) ),
+    ## Retrieve results
+    results <- lapply( .read_lines_from_reducer_output( dc_get_corpus_storage(x), rev ),
+                       function(x) strsplit(x, "\t") )
+    
+    terms <- unlist( lapply(results, function(x) x[[1]][1]) )
+    results <- lapply( results,
+                       function(x) dc_unserialize_object(x[[1]][2]) )
+    
+    .fix_TDM( tm:::.TermDocumentMatrix( i    = rep(seq_len(length(terms)),
+                                          unlist(lapply(results, function(x) length(x[[ 2 ]])))),
+                                       j    = unlist(lapply(results, function(x) x[[ 1 ]])),
+                                       v    = as.numeric(unlist(lapply(results, function(x) x[[ 2 ]]))),
+                                       nrow = length(terms),
+                                       ncol = length(x),
+                                       dimnames = list(Terms = terms, Docs = as.character(seq_len(length(x)))) ),
              attr(x, "Keys") )
 }
+
+    ##.fix_TDM( do.call( c, lapply(chunks, function(x) {
+    ##  object <- dc_read_lines(storage, x)
+    ##  dc_unserialize_object( strsplit(object, "\t")[[ 1 ]][2] ) }) ),
+    ##         attr(x, "Keys") )
+
+
+.read_lines_from_reducer_output <- function( storage, rev )
+  unlist( lapply(.get_chunks_from_revision(storage, rev),
+                           function(x) dc_read_lines(storage, x)))
+
+.get_chunks_from_revision <- function(storage, rev)
+  file.path( rev, grep("part-", dc_list_directory(storage, rev),
+                              value =TRUE) )
 
 .dc_TermDocumentMatrix <- function(storage, x, control)
     UseMethod(".dc_TermDocumentMatrix")
@@ -76,13 +99,19 @@ TermDocumentMatrix.DistributedCorpus <- function( x, control = list() ){
     ## MAP is basically a call to termFreq
     ## REDUCE builds then the termDoc matrix
     ## TODO: implement check nreducers <= nDocs (or chunks?)
-    rev <- .tm_map_reduce(x,
-                          .generate_TDM_mapper(),
-                          .generate_TDM_reducer(),
-                          cmdenv_arg = cmdenv_arg)
+    ## FIXME: old streaming job. can be removed once new version works
+
+    #attr(x, "ActiveRevision") <- .tm_map_reduce(x,
+    #                                            .generate_TDM_mapper(),
+    #                                            cmdenv_arg = cmdenv_arg)
+    
+    rev_out <- .tm_map_reduce(x,
+                              .generate_TDM_mapper2(),
+                              .generate_TDM_reducer3(),
+                              cmdenv_arg = cmdenv_arg)
     if( !is.null(cmdenv_arg) )
         unlink(control_file)
-    rev
+    rev_out
 }
 
 ## TODO: we should support several 'map functions' e.g. stripWhitespace,
@@ -123,7 +152,15 @@ TermDocumentMatrix.DistributedCorpus <- function( x, control = list() ){
         else
             control <- list()
 
-        split_line <- tm.plugin.dc:::dc_split_line
+        ##split_line <- tm.plugin.dc:::dc_split_line
+        split_line <- function(line) {
+          val <- unlist(strsplit(line, "\t"))
+#          value <- tryCatch(unserialize(charToRaw(gsub("\\n", "\n", val[2], fixed = TRUE))), error = identity)
+#          if(inherits(value, "error"))
+#            stop(sprintf("unserialize error at key: %s", val[1]))
+          list( key = val[1], value = unserialize(charToRaw(gsub("\\n", "\n", val[2], fixed = TRUE))))
+        }
+        
         mapred_write_output <- function(key, value)
             cat( sprintf("%s\t%s", key,
                          tm.plugin.dc:::dc_serialize_object(value)), sep ="\n" )
@@ -145,9 +182,137 @@ TermDocumentMatrix.DistributedCorpus <- function( x, control = list() ){
     }
 }
 
+## Mapper version 2: instead of serializing termFreq vectors we write plain text files
+.generate_TDM_mapper2 <- function() {
+    function(){
+        require("tm")
+
+        ## We need to get the control list from the environment variables
+        control_file <- Sys.getenv("_HIVE_TERMFREQ_CONTROL_")
+
+        if( file.exists(control_file) )
+            load( control_file )
+        else
+            control <- list()
+
+        ##split_line <- tm.plugin.dc:::dc_split_line
+        split_line <- function(line) {
+          val <- unlist(strsplit(line, "\t"))
+          list( key = val[1], value = unserialize(charToRaw(gsub("\\n", "\n", val[2], fixed = TRUE))))
+        }
+        
+        con <- file("stdin", open = "r")
+        while (length(line <- readLines(con, n = 1L, warn = FALSE)) > 0) {
+            input <- split_line(line)
+            ## in the TDM mapper we apply termFreq on the documents,
+            ## doing also all the preprocessing tasks.
+            ## Note: the last entry is the DocMapping matrix
+            if(!is.integer(input$value)){
+                result <- termFreq(input$value, control)
+                if(length(result)){
+                  cat(paste(names(result), ID(input$value), result, sep = "\t"), sep = "\n")
+                }
+            }
+        }
+        close(con)
+    }
+}
+
+## Second mapper reduces term vectors per document to TDM per chunk
+## can be seen as a "combiner" in Hadoop Terminology
+
+.generate_TDM_combiner <- function() {
+    function(){
+        require("tm")
+
+        split_line <- tm.plugin.dc:::dc_split_line
+        mapred_write_output <- function(key, value)
+            cat( sprintf("%s\t%s", key,
+                         tm.plugin.dc:::dc_serialize_object(value)), sep ="\n" )
+
+        ## initialize TDM
+        out <- list(tm:::.TermDocumentMatrix())
+        con <- file("stdin", open = "r")
+        while (length(line <- readLines(con, n = 1L, warn = FALSE)) > 0) {
+            input <- split_line(line)
+            out <- c(out,
+                     list(tm:::.TermDocumentMatrix(i = seq_along(input$value),
+                                                   j = rep(1L, length(input$value)),
+                                                   v = as.numeric(input$value),
+                                                   nrow = length(input$value),
+                                                   ncol = 1L,
+                                                   dimnames = list(names(input$value),
+                                                   input$key))))
+        }
+        close(con)
+
+    ## key temporarily the name of the last active document
+    ## FIXME: should be replaced by sort of a checksum of the matrix
+        mapred_write_output(input$key, do.call(c, out))
+  }
+}
+
+.generate_TDM_reducer3 <- function() {
+    function(){
+        
+        split_line <- function(line) {
+          val <- unlist(strsplit(line, "\t"))
+          list( word = as.character(val[1]), id = as.integer(val[2]), count = as.integer(val[3]) )
+        }
+        
+        mapred_write_output <- function(key, value)
+            cat( sprintf("%s\t%s", key,
+                         tm.plugin.dc:::dc_serialize_object(value)), sep ="\n" )
+
+        ## initialize environment holding words
+        env <- new.env( hash = TRUE )
+        
+        con <- file("stdin", open = "r")
+        while( length(line <- readLines(con, n = 1L, warn = FALSE)) > 0 ) {
+          input <- split_line( line )
+          
+          if( tryCatch(exists(input$word, envir = env, inherits = FALSE), error = function(x) FALSE) ){
+            old <- get( input$word, envir = env )
+            new <- list( c(old[[1]], input$id), c(old[[2]], input$count) )
+            tryCatch( assign( input$word, new, envir = env ), error = function(x) FALSE )
+          }
+          else tryCatch(assign( input$word, list(input$id, input$count), envir = env), error = function(x) FALSE)
+        }
+        close(con)
+        
+        ## key temporarily the name of the last active document
+        ## FIXME: should be replaced by sort of a checksum of the matrix
+        for( term in ls(env, all = TRUE) )
+          mapred_write_output( term, get(term, envir = env) )
+      }
+}
 
 ## currently the tm reducer only makes TDMs out of the input (documents)
 ## NOTE: Works only for term-document matrices (and NOT document-term matrices)
+.generate_TDM_reducer2 <- function() {
+    function(){
+        require("tm")
+
+        split_line <- tm.plugin.dc:::dc_split_line
+        mapred_write_output <- function(key, value)
+            cat( sprintf("%s\t%s", key,
+                         tm.plugin.dc:::dc_serialize_object(value)), sep ="\n" )
+
+        ## initialize TDM
+        out <- list(tm:::.TermDocumentMatrix())
+        con <- file("stdin", open = "r")
+        while (length(line <- readLines(con, n = 1L, warn = FALSE)) > 0) {
+          input <- split_line(line)
+          out <- c(out, list(input$value))
+        }
+        close(con)
+        
+        ## key temporarily the name of the last active document
+        ## FIXME: should be replaced by sort of a checksum of the matrix
+        mapred_write_output(input$key, do.call(c, out))
+      }
+}
+
 .generate_TDM_reducer <- function() {
     function(){
         require("tm")
@@ -189,12 +354,9 @@ TermDocumentMatrix.DistributedCorpus <- function( x, control = list() ){
 
 ## FIXME: we can do this more efficiently
 .fix_TDM <- function(x, ids){
-  not_included <- ids[ ! (ids %in% Docs(x)) ]
-  x$ncol <- x$ncol + length( not_included )  
-  x$dimnames$Docs <- c(x$dimnames$Docs, as.character(not_included))
-  x <- x[, as.character(ids)]
+  #x$ncol <- x$ncol + length( not_included )  
+  #x$dimnames$Docs <- c(x$dimnames$Docs, as.character(not_included))
   x <- x[sort(Terms(x)), ]
-  names(x$dimnames) <- c("Terms", "Docs")
   ## column major order
   cmo <- order(x$j)
   x$i <- x$i[cmo]

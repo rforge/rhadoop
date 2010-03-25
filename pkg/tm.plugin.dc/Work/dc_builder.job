@@ -1,12 +1,12 @@
 #!/bin/bash
-## Prepare NYT corpus
+## Prepare corpus via parallel SGE jobs
 ## Construct distributed corpus
 
-#$ -N NYTbuilder -t 1:30
-#$ -q node.q
+#$ -N RCV1builder -t 1:30
+#$ -q hadoop.q
 #$ -m bea 
 #$ -M stefan.theussl@wu.ac.at
 
 ## copy corpus to local file system
 hostname
-R --vanilla < /home/stheussl/svn/RHadoop/pkg/tm.plugin.dc/Work/NYT_builder.R
+R --vanilla < /home/stheussl/svn/RHadoop/pkg/tm.plugin.dc/Work/RCV1_builder.R

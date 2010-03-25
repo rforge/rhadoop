@@ -86,6 +86,11 @@ function(x, FUN, ..., useMeta = FALSE, lazy = FALSE) {
     load(Sys.getenv("_HIVE_FUNCTION_TO_APPLY_"))
 
     split_line <- tm.plugin.dc:::dc_split_line
+    ##split_line <- function(line) {
+    ##  val <- unlist(strsplit(line, "\t"))
+    ##  list( key = val[1], value = gsub("\n", "\\n", rawToChar(serialize(val[2], NULL, TRUE)), fixed = TRUE) )
+    ##}
+      
     mapred_write_output <- function(key, value)
       cat( sprintf("%s\t%s",
                    key,

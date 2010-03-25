@@ -11,7 +11,7 @@
 
 ## generates random revision strings
 .generate_random_revision <- function()
-    sub( "/", "", tempfile("", "") )
+  format(Sys.time(), "%Y%m%d%H%M%S")
 
 dc_get_corpus_storage <- function( x )
   attr(x, "Storage")
@@ -29,8 +29,10 @@ dc_hash <- function( n )
   matrix(0L, nrow = n, ncol = 2L, dimnames = list(NULL, c("Chunk", "Position")))
 
 ## serializes a given object to a character string
+## FIXME: we need to add a second gsub before we replace \n with \\n as otherwise
+##        \\n possibly contained in texts leads to not unserializable results 
 dc_serialize_object <- function( x )
-    gsub("\n", "\\\\n", rawToChar(serialize(x, NULL, TRUE)))
+  gsub("\n", "\\\\n", gsub("\\n", "\\\n", rawToChar(serialize(x, NULL, TRUE)), fixed = TRUE))
 
 ## reads line (e.g. taken from standard input) and returns
 ## the key and the deserialized object

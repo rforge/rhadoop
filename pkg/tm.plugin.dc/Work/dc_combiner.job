@@ -2,10 +2,10 @@
 ## Prepare NYT corpus
 ## Construct distributed corpus
 
-#$ -N NYTcombiner
-#$ -q node.q
+#$ -N RCV1combiner
+#$ -q hadoop.q
 #$ -m bea 
 #$ -M stefan.theussl@wu.ac.at
 
 ## combine corpus subsets
-R --vanilla < /home/stheussl/svn/RHadoop/pkg/tm.plugin.dc/Work/NYT_combiner.R
+R --vanilla < /home/stheussl/svn/RHadoop/pkg/tm.plugin.dc/Work/RCV1_combiner.R
