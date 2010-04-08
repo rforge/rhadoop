@@ -1,4 +1,5 @@
 import("tm")
+useDynLib("tm.plugin.dc")
 
 ## Constructor
 export("DistributedCorpus")

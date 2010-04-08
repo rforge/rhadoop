@@ -107,7 +107,7 @@ TermDocumentMatrix.DistributedCorpus <- function( x, control = list() ){
 
     rev_out <- .tm_map_reduce(x,
                               .generate_TDM_mapper2(),
-                              .generate_TDM_reducer3(),
+                              .generate_TDM_reducer4(),
                               cmdenv_arg = cmdenv_arg)
     if( !is.null(cmdenv_arg) )
         unlink(control_file)
@@ -252,6 +252,45 @@ TermDocumentMatrix.DistributedCorpus <- function( x, control = list() ){
   }
 }
 
+## using C function for collecting termFreq results
+.generate_TDM_reducer4 <- function() {
+    function(){
+
+        split_line <- function(line) {
+          val <- unlist(strsplit(line, "\t"))
+          list( word = as.character(val[1]), id = as.integer(val[2]), count = as.integer(val[3]) )
+        }
+
+        mapred_write_output <- function(key, value)
+            cat( sprintf("%s\t%s", key,
+                         tm.plugin.dc:::dc_serialize_object(value)), sep ="\n" )
+
+        ## initialize environment holding words
+        env <- new.env( hash = TRUE, size = 10240 )
+
+        con <- file("stdin", open = "r")
+        while( length(line <- readLines(con, n = 1L, warn = FALSE)) > 0 ) {
+          input <- split_line( line )
+          tryCatch( assign(input$word,
+                           tm.plugin.dc:::.collector2(
+                                       if(tryCatch(exists(input$word, envir = env, inherits = FALSE), error = function(x) FALSE))
+                                       get(input$word, envir = env, inherits = FALSE)
+                                       else
+                                       NULL,
+                                       list(input$id, input$count)
+                                       ),
+                           envir = env
+                           ), error = function(x) FALSE )
+        }
+        close(con)
+
+        env <- as.list(env)
+        env <- lapply(env, tm.plugin.dc:::.collector2, NULL)
+        for( term in names(env) )
+          mapred_write_output( term, env[[ term ]] )
+      }
+}
+
 .generate_TDM_reducer3 <- function() {
     function(){
 
@@ -265,7 +304,7 @@ TermDocumentMatrix.DistributedCorpus <- function( x, control = list() ){
                          tm.plugin.dc:::dc_serialize_object(value)), sep ="\n" )
 
         ## initialize environment holding words
-        env <- new.env( hash = TRUE )
+        env <- new.env( hash = TRUE, size = 10240 )
 
         con <- file("stdin", open = "r")
         while( length(line <- readLines(con, n = 1L, warn = FALSE)) > 0 ) {
@@ -365,3 +404,6 @@ TermDocumentMatrix.DistributedCorpus <- function( x, control = list() ){
   x
 }
 
+## thanks to ceeboo: improved collector version to make reduce step run more efficiently
+.collector2 <- function(x = NULL, y, ...)
+      .Call("_collector2", x, y, package = "tm.plugin.dc")
