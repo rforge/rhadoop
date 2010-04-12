@@ -114,7 +114,8 @@ dc_fetch_last_line <- function( storage, file ){
 
 dc_read_lines <- function( storage, file ){
     stopifnot( is.dc_storage(storage) )
-    file <- sub("/./", "", file.path(storage$base_directory, file ))
+    #file <- sub("/./", "", file.path(storage$base_directory, file ))
+    file <- file.path(storage$base_directory, file )
     storage$read_lines( file )
 }
 
