@@ -1,3 +1,31 @@
+## dc_storage accessor and replacement functions for class "DistributedCorpus"
+
+dc_storage <- function(x, ...)
+  UseMethod("dc_storage")
+
+dc_storage.dc_storage <- function(x, ...)
+  identity(x)
+
+dc_storage.DistributedCorpus <- function( x, ... )
+  attr(x, "Storage")
+
+`dc_storage<-` <- function(x, value)
+  UseMethod("dc_storage<-")
+
+`dc_storage<-.DistributedCorpus` <- function(x, value){
+  old_stor <- dc_storage(x)
+  if( inherits(old_stor, "local_disk") && inherits(value, "HDFS") ){
+    DFS_dir_create( value$base_directory )
+    DFS_put( file.path(old_stor$base_directory, attr(x, "ActiveRevision")),
+             file.path(   value$base_directory, attr(x, "ActiveRevision")) )
+  } else {
+    stop("not implemented!")
+  }
+  attr(x, "Storage") <- value
+  x
+}
+
+  
 ## .storage_init() initializes the storage to be used for the distributed corpus.
 .dc_storage_init <- function( x ) {
     if( missing(x) )

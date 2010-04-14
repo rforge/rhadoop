@@ -9,4 +9,4 @@ Author: Ingo Feinerer and Stefan Theussl
 Maintainer: Stefan Theussl <Stefan.Theussl@wu.ac.at>
 License: GPL-3
 Depends: tm (>= 0.5-2)
-Suggest: hive (>= 0.1-4)
+Suggests: hive (>= 0.1-4)

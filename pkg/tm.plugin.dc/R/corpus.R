@@ -181,7 +181,7 @@ as.DistributedCorpus.Corpus <- function(x, storage = dcStorage(), ...){
 `[[.DistributedCorpus` <- function( x, i ) {
     ## TODO: what if there are more than 1 chunk
     mapping <- dc_get_text_mapping_from_revision( x )[ i, ]
-    line <- dc_read_lines( dc_get_corpus_storage(x),
+    line <- dc_read_lines( dc_storage(x),
                            dc_get_file_path_for_chunk(x, mapping["Chunk"])
                            ) [ mapping["Position"] ]
     dc_unserialize_object( strsplit( line, "\t" )[[ 1 ]][ 2 ] )
@@ -196,7 +196,7 @@ summary.DistributedCorpus <- function( object, ... ) {
     cat("Available revisions:\n")
     cat(strwrap(paste(unlist(attr(object, "Revisions")), collapse = " "), indent = 2, exdent = 2), "\n")
     cat(sprintf("Active revision: %s\n", attr(object, "ActiveRevision")))
-    print(dc_get_corpus_storage(object))
+    print(dc_storage(object))
 }
 
 ## Set active revision in the DC to the specified revision
@@ -214,13 +214,13 @@ getRevisions <- function(corpus){
 
 updateRevision <- function( corpus, revision ){
     chunks <- grep("part-",
-                   dc_list_directory(dc_get_corpus_storage(corpus), revision),
+                   dc_list_directory(dc_storage(corpus), revision),
                    value = TRUE)
 
     ## we need to read a certain number of bytes with DFS_tail.
     chunk_stamps <- lapply( chunks,
                             function(x) dc_fetch_last_line(
-                                          dc_get_corpus_storage(corpus),
+                                          dc_storage(corpus),
                                           file.path(revision, x)) )
     ## chunk order is equal to order of first keys
     firstkeys <- as.integer(unlist(lapply(chunk_stamps,

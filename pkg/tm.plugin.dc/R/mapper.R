@@ -4,7 +4,7 @@ function(x, FUN, ..., useMeta = FALSE, lazy = FALSE) {
     ## TODO: shouldn't we check provided function for sanity?
 
     ## call the appropriate tm_map method based on storage technology
-    rev <- .dc_tm_map(dc_get_corpus_storage(x), x, FUN, useMeta = useMeta, ...)
+    rev <- .dc_tm_map(dc_storage(x), x, FUN, useMeta = useMeta, ...)
 
     ## add new revision to corpus meta info, returns corpus
     .finalize_and_update_corpus(x, rev)

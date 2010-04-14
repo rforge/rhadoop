@@ -8,10 +8,10 @@ TermDocumentMatrix.DistributedCorpus <- function( x, control = list() ){
     ## makes the TDMs
 
     ## Start MapReduce job based on storage class
-    rev <- .dc_TermDocumentMatrix( dc_get_corpus_storage(x), x, control )
+    rev <- .dc_TermDocumentMatrix( dc_storage(x), x, control )
 
     ## Retrieve results
-    results <- lapply( .read_lines_from_reducer_output( dc_get_corpus_storage(x), rev ),
+    results <- lapply( .read_lines_from_reducer_output( dc_storage(x), rev ),
                        function(x) strsplit(x, "\t") )
 
     terms <- unlist( lapply(results, function(x) x[[1]][1]) )
@@ -127,15 +127,15 @@ TermDocumentMatrix.DistributedCorpus <- function( x, control = list() ){
 
     ## start the streaming job
     hive::hive_stream( MAP, REDUCE,
-                      input = file.path(dc_get_corpus_storage(x)$base_directory,
+                      input = file.path(dc_storage(x)$base_directory,
                                         attr(x, "ActiveRevision")),
                       output = file.path(
-                                   dc_get_corpus_storage(x)$base_directory,rev),
+                                   dc_storage(x)$base_directory,rev),
                       cmdenv_arg = cmdenv_arg )
 
     ## in case the streaming job failed to create output directory return error
     stopifnot( hive::DFS_dir_exists(file.path(
-                                        dc_get_corpus_storage(x)$base_directory,
+                                        dc_storage(x)$base_directory,
                                         rev)) )
     rev
 }

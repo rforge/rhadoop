@@ -1,0 +1,12 @@
+#!/bin/bash
+## Prepare corpus via parallel SGE jobs
+## Construct distributed corpus
+
+#$ -N NYTbuilder 
+#$ -q bignode.q
+#$ -m bea
+#$ -M stefan.theussl@wu.ac.at
+
+## copy corpus to local file system
+hostname
+R --vanilla < ./NYT_DTM_from_partial_results.R

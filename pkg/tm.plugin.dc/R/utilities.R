@@ -13,9 +13,6 @@
 .generate_random_revision <- function()
   format(Sys.time(), "%Y%m%d%H%M%S")
 
-dc_get_corpus_storage <- function( x )
-  attr(x, "Storage")
-
 dc_get_file_path_for_chunk <- function( x, chunk,
                                         revision = attr(x, "ActiveRevision") )
   file.path( revision, attr(x, "Chunks")[[ revision ]] [ chunk ] )
