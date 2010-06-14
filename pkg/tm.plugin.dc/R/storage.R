@@ -15,9 +15,15 @@ dc_storage.DistributedCorpus <- function( x, ... )
 `dc_storage<-.DistributedCorpus` <- function(x, value){
   old_stor <- dc_storage(x)
   if( inherits(old_stor, "local_disk") && inherits(value, "HDFS") ){
-    DFS_dir_create( value$base_directory )
-    DFS_put( file.path(old_stor$base_directory, attr(x, "ActiveRevision")),
-             file.path(   value$base_directory, attr(x, "ActiveRevision")) )
+    if( !DFS_dir_exists(value$base_directory) ){
+      DFS_dir_create( value$base_directory )
+      DFS_put( file.path(old_stor$base_directory, attr(x, "ActiveRevision")),
+              file.path(   value$base_directory, attr(x, "ActiveRevision")) )
+    }
+    else {
+      if( !.check_contents_of_storage(x, value) )
+        stop("HDFS storage already contains this directory with different data for the active revision")
+    }
   } else {
     stop("not implemented!")
   }
@@ -25,7 +31,12 @@ dc_storage.DistributedCorpus <- function( x, ... )
   x
 }
 
-  
+## FIXME: we need to provide some checksums here
+.check_contents_of_storage <- function(x, value){
+  all( attr(RCV1, "Chunks")[[ getRevisions(RCV1)[[1]] ]] %in%
+       tm.plugin.dc:::dc_list_directory( value, attr(x, "ActiveRevision")) )
+}
+
 ## .storage_init() initializes the storage to be used for the distributed corpus.
 .dc_storage_init <- function( x ) {
     if( missing(x) )
