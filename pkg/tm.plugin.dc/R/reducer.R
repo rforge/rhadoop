@@ -210,7 +210,7 @@ TermDocumentMatrix.DistributedCorpus <- function( x, control = list() ){
             if(!is.integer(input$value)){
                 result <- termFreq(input$value, control)
                 if(length(result)){
-                  cat(paste(names(result), ID(input$value), result, sep = "\t"), sep = "\n")
+                  cat(paste(names(result), input$key, result, sep = "\t"), sep = "\n")
                 }
             }
         }

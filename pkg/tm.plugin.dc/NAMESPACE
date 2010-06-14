@@ -10,6 +10,7 @@ export("getRevisions")
 
 ## Generic functions
 export("as.DistributedCorpus")
+export("as.Corpus")
 
 ## Methods on DistributedCorpus
 S3method("[[", "DistributedCorpus")
@@ -23,6 +24,8 @@ S3method("tm_map", "DistributedCorpus")
 ## Methods on Corpus
 S3method("as.DistributedCorpus", "Corpus")
 S3method("as.DistributedCorpus", "DistributedCorpus")
+S3method("as.Corpus", "Corpus")
+S3method("as.Corpus", "DistributedCorpus")
 
 ## Storage functions
 export("dcStorage",

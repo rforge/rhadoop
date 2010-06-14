@@ -1,6 +1,6 @@
 Package: tm.plugin.dc
-Version: 0.1-2
-Date: 2010-04-06
+Version: 0.1-3
+Date: 2010-06-14
 Title: Text Mining Distributed Corpus Plug-In
 Description: A plug-in for the text mining framework tm to support text mining 
              in a distributed way. The package provides a convinient interface for
@@ -9,4 +9,4 @@ Author: Ingo Feinerer and Stefan Theussl
 Maintainer: Stefan Theussl <Stefan.Theussl@wu.ac.at>
 License: GPL-3
 Depends: tm (>= 0.5-2)
-Suggests: hive (>= 0.1-4)
+Suggests: hive (>= 0.1-5)

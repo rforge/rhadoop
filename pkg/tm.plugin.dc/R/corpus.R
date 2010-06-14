@@ -178,6 +178,23 @@ as.DistributedCorpus.Corpus <- function(x, storage = dcStorage(), ...){
                        storage = storage)
 }
 
+as.Corpus <- function(x, ...){
+  UseMethod("as.Corpus")
+}
+
+as.Corpus.Corpus <- function(x, ...){
+  identity(x)
+}
+
+as.Corpus.DistributedCorpus <- function(x, ...){
+    chunks <- lapply( unique(dc_get_text_mapping_from_revision(x)[, "Chunk"]), function(chunk) dc_get_file_path_for_chunk(x, chunk) )   
+    contents <- lapply( unlist(lapply( chunks, function(chunk) {lines <- dc_read_lines( dc_storage(x), chunk )
+                                      lines[-length(lines)]} )),
+                       function( line ) dc_unserialize_object(strsplit(line, "\t")[[1]][2]) )
+    
+    tm:::.VCorpus(contents, CMetaData(x), DMetaData(x))
+}
+
 `[[.DistributedCorpus` <- function( x, i ) {
     ## TODO: what if there are more than 1 chunk
     mapping <- dc_get_text_mapping_from_revision( x )[ i, ]

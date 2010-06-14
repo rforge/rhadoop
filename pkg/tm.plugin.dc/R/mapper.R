@@ -106,7 +106,7 @@ function(x, FUN, ..., useMeta = FALSE, lazy = FALSE) {
         first <- FALSE
       }
 
-      if(is.character(result)){
+      if(length(result)){
         mapred_write_output(input$key, result)
       } else
         mapred_write_output(input$key, PlainTextDocument(id = ID(result)))

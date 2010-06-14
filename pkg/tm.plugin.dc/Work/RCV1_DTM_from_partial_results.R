@@ -1,12 +1,12 @@
 library("tm.plugin.dc")
 library("multicore")
 
-#tgz <-  "/home/stheussl/Data/nyt/nyt_dtm_sources.tar.gz"
+tgz <-  "/home/stheussl/Data/Reuters/RCV1_dtm_sources.tar.gz"
 
-#path <- "/tmp/theussl_NYT"
-#dir.create(path)
-#system(sprintf("tar xzf %s -C %s", tgz, path))
-path <- "/scratch/9157.1.bignode.q/incoming"
+path <- "/scratch/9214.1.bignode.q/incoming"
+dir.create(path)
+system(sprintf("tar xzf %s -C %s", tgz, path))
+
 
 .read_lines_from_reducer_output <- function( path, cores = 4L )
   mclapply( .get_chunks_from_revision(path),
@@ -27,16 +27,19 @@ construct_term_list <- function( DTM_results, cores = 2L ){
                         mc.cores = cores) ), names = unlist(mclapply(DTM_results, function(x) unlist(lapply(x, function(e) e[[1]])), mc.cores = cores)) )
 }
 
+## should be length(RCV1)
+ndoc <- 806791
 term_list <- construct_term_list( .read_lines_from_reducer_output(path) )
 
-NYT_DTM <- tm:::.TermDocumentMatrix( i    = rep(seq_along(term_list),
+RCV1_TDM <- tm:::.TermDocumentMatrix( i    = rep(seq_along(term_list),
                                    unlist(lapply(term_list, function(x) length(x[[ 2 ]])))),
                                      j    = unlist(lapply(term_list, function(x) x[[ 1 ]])),
                                      v    = as.numeric(unlist(lapply(term_list, function(x) x[[ 2 ]]))),
                                      nrow = length(term_list),
                                         #ncol = length(x),
-                                     ncol = 1700000,
-                                     dimnames = list(Terms = names(term_list), Docs = as.character(seq_len(1700000))) )
+                                     ncol = ndoc,
+                                     dimnames = list(Terms = names(term_list), Docs = as.character(seq_len(ndoc))) )
 
-save(DTM_results, file = "DTM_results.rda")
+RCV1_DTM <- t(RCV1_TDM)
+save(RCV1_TDM, file = "RCV1_TDM.rda")
 
