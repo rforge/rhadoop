@@ -11,7 +11,7 @@
 
 ## generates random revision strings
 .generate_random_revision <- function()
-  format(Sys.time(), "%Y%m%d%H%M%S")
+  sprintf("%s-%s-%s", format(Sys.time(), "%Y%m%d%H%M%S"), sample(0:9, 1), sample(letters, 1))
 
 dc_get_file_path_for_chunk <- function( x, chunk,
                                         revision = attr(x, "ActiveRevision") )
@@ -27,7 +27,7 @@ dc_hash <- function( n )
 
 ## serializes a given object to a character string
 ## FIXME: we need to add a second gsub before we replace \n with \\n as otherwise
-##        \\n possibly contained in texts leads to not unserializable results 
+##        \\n possibly contained in texts leads to not unserializable results
 dc_serialize_object <- function( x )
   gsub("\n", "\\\\n", gsub("\\n", "\\\n", rawToChar(serialize(x, NULL, TRUE)), fixed = TRUE))
 

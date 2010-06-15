@@ -1,6 +1,7 @@
 \name{DistributedCorpus}
 \alias{DistributedCorpus}
 \alias{as.DistributedCorpus}
+\alias{as.Corpus}
 
 \title{Distributed Corpus}
 \description{
@@ -10,9 +11,9 @@
 DistributedCorpus( source,
                    readerControl = list(reader   = source$DefaultReader,
                                         language = "eng"),
-                   storage = dcStorage(), ... )
-
-as.DistributedCorpus( x, storage = dcStorage(), ... )
+                   storage = NULL, keys = NULL, ... )
+as.Corpus( x, ... )
+as.DistributedCorpus( x, storage = NULL, ... )
 }
 \arguments{
   \item{source}{A \code{\link[tm]{Source}} object. At the moment only
@@ -24,14 +25,18 @@ as.DistributedCorpus( x, storage = dcStorage(), ... )
   \item{storage}{The storage subsystem to use with the
     DistributedCorpus. Currently two types of storages are supported:
     local disk storage (local_disk) and the Hadoop distributed file
-    system (HDFS).}
+    system (HDFS). If no storage is specified it uses a default storage,
+    namely 'local_disk'.}
+  \item{keys}{An integer vector of the same length as the number of
+    documents in the corpus. Uniquely identifies the document in the
+    chunks. Default: a sequence from 1 to the number of documents.}
   \item{x}{An object to be coerced to a
-    \code{DistributedCorpus}. Currently coercion from classic \pkg{tm}
-    corpora is implemented.}
+    \code{Corpus}/\code{DistributedCorpus}. Currently coercion from/to
+    classic \pkg{tm} corpora (\code{VCorpus}) is implemented.}
   \item{\dots}{Optional arguments for the \code{reader}.}
 }
 \details{When constructing a distributed corpus the input source is
-  extracted via the supplied reader and stored in the given file
+  extracted via the supplied reader and stored on the given file
   system (argument \code{storage}). While the dataset resides on the
   corresponding storage (e.g., HDFS), only a symbolic representation is
   held in \R which allows to access the corpus via corresponding methods
@@ -90,7 +95,7 @@ dc
 ## Coercion
 data("crude")
 as.DistributedCorpus(crude)
-
+as.Corpus(dc)
 }
 \author{
   Ingo Feinerer and Stefan Theussl

@@ -20,7 +20,11 @@ DistributedCorpus <-
     function( source,
               readerControl = list(reader   = source$DefaultReader,
                                    language = "eng"),
-              storage = dcStorage(), keys = NULL, ... ) {
+              storage = NULL, keys = NULL, ... ) {
+
+    if( is.null(storage) )
+        storage <- dc_default_storage()
+    storage <- as.dc_storage(storage)
 
     if( !inherits(source, "DirSource") )
         stop("unsupported source type (use DirSource instead)")
@@ -117,15 +121,17 @@ print.DistributedCorpus <- function(x, ...) {
 length.DistributedCorpus <- function(x)
   length(Keys(x))
 
-as.DistributedCorpus <- function(x, storage = dcStorage(), ...){
+as.DistributedCorpus <- function(x, storage = NULL, ...){
   UseMethod("as.DistributedCorpus")
 }
 
-as.DistributedCorpus.DistributedCorpus <- function(x, storage = dcStorage(), ...){
+as.DistributedCorpus.DistributedCorpus <- function(x, storage = NULL, ...){
   identity(x)
 }
 
-as.DistributedCorpus.Corpus <- function(x, storage = dcStorage(), ...){
+as.DistributedCorpus.Corpus <- function(x, storage = NULL, ...){
+    if( is.null(storage) )
+        storage <- dc_default_storage()
 
     activeRev <- .generate_random_revision()
     dc_dir_create(storage, activeRev)
@@ -187,11 +193,11 @@ as.Corpus.Corpus <- function(x, ...){
 }
 
 as.Corpus.DistributedCorpus <- function(x, ...){
-    chunks <- lapply( unique(dc_get_text_mapping_from_revision(x)[, "Chunk"]), function(chunk) dc_get_file_path_for_chunk(x, chunk) )   
+    chunks <- lapply( unique(dc_get_text_mapping_from_revision(x)[, "Chunk"]), function(chunk) dc_get_file_path_for_chunk(x, chunk) )
     contents <- lapply( unlist(lapply( chunks, function(chunk) {lines <- dc_read_lines( dc_storage(x), chunk )
                                       lines[-length(lines)]} )),
                        function( line ) dc_unserialize_object(strsplit(line, "\t")[[1]][2]) )
-    
+
     tm:::.VCorpus(contents, CMetaData(x), DMetaData(x))
 }
 

@@ -28,15 +28,16 @@ S3method("as.Corpus", "Corpus")
 S3method("as.Corpus", "DistributedCorpus")
 
 ## Storage functions
-export("dcStorage",
-       ".dc_storage_init",
-       ".dc_storage",
+export("dc_storage_create",
        "dc_storage",
-       "dc_storage<-")
+       "dc_storage<-",
+       "as.dc_storage",
+       "is.dc_storage")
 
 S3method("dc_storage", "DistributedCorpus")
 S3method("dc_storage", "dc_storage")
 S3method("dc_storage<-", "DistributedCorpus")
+S3method("as.dc_storage", "dc_storage")
 
 S3method("print", "dc_storage")
 S3method("summary", "dc_storage")

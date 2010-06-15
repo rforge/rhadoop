@@ -9,17 +9,17 @@ data(crude)
 ## Standard disk storage
 ################################################################################
 
-dcStorage()
-
 ## -> crude: build distributed corpus
 ################################################################################
 
 dc <- as.DistributedCorpus(crude)
+summary(dc)
 ## check if dc and classic corpus contain the same documents
 stopifnot( all(sapply(seq_len(length(dc)),
                       function(x) identical(crude[[x]], dc[[x]]))) )
 
 ## -> crude: preprocess distributed corpus
+
 ################################################################################
 
 dc <- tm_map(dc, stemDocument)
@@ -79,14 +79,14 @@ if( inherits(tryCatch(hive_is_available(), error = identity), "error") ){
     hive( hive_create("/home/theussl/lib/hadoop-0.20.1") )
     hive_start()
 }
-stor <- tm.plugin.dc:::dc_HDFS_storage()
+stor <- dc_storage_create(type = "HDFS")
 stor
-dcStorage(stor)
+
 
 ## -> crude: build distributed corpus
 ################################################################################
 
-hdc <- as.DistributedCorpus(crude)
+hdc <- as.DistributedCorpus(crude, storage = stor)
 ## check if dc and classic corpus contain the same documents
 stopifnot( all(sapply(seq_len(length(hdc)),
                       function(x) identical(crude[[x]], hdc[[x]]))) )
@@ -133,7 +133,7 @@ system( sprintf("tar xzf %s -C %s", input, tmp_dir) )
 xml <- file.path( tmp_dir, dir( tmp_dir ) )
 
 ## Configure HDFS Storage
-storage <- tm.plugin.dc:::dc_HDFS_storage() 
+storage <- tm.plugin.dc:::dc_HDFS_storage()
 storage$chunksize <- 2 * 1024^2
 dcStorage( storage )
 
