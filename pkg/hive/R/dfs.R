@@ -29,6 +29,7 @@ DFS_file_exists <- function( file, henv = hive() ) {
 
 ## does dir exist in DFS? (Java)
 DFS_dir_exists <- function( path, henv = hive() ) {
+  path <- file.path(path)
   status <- tryCatch(.DFS_getFileStatus(path, henv ), error = identity)
   if(inherits(status, "error"))
     return(FALSE)
