@@ -73,7 +73,7 @@ dc_default_storage <- function(){
                  fetch_last_line = function(x) hive::DFS_tail(n = 1L, as.character(x), henv = hive()),
                  list_directory  = function(x) hive::DFS_list(x, henv = hive()),
                  read_lines      = function(x) hive::DFS_read_lines(as.character(x), henv = hive()),
-                 unlink          = function(x) hive::DFS_dir_remove(x, henv = hive()),
+                 unlink          = function(x) hive::DFS_delete(x, recursive = TRUE, henv = hive()),
                  write_lines     = function(text, fil) hive::DFS_write_lines(text, as.character(fil), henv = hive()), ...
                 )
 }
@@ -124,9 +124,9 @@ dc_storage.DistributedCorpus <- function( x, ... )
 
 `dc_storage<-.DistributedCorpus` <- function(x, value){
   old_stor <- dc_storage(x)
+  stopifnot( DFS_dir_exists(dc_base_dir(value)) )
   if( inherits(old_stor, "local_disk") && inherits(value, "HDFS") ){
-    if( !DFS_dir_exists(dc_base_dir(value)) ){
-      DFS_dir_create( dc_base_dir(value) )
+    if( !length(DFS_list(dc_base_dir(value))) ){
       DFS_put( file.path( dc_base_dir(old_stor), attr(x, "ActiveRevision")),
                file.path( dc_base_dir(value), attr(x, "ActiveRevision")) )
     }
@@ -226,7 +226,7 @@ check_storage_for_sanity <- function( storage ){
     dc_dir_create( storage, dir )
 
     contents <- dc_list_directory( storage )
-    stopifnot(contents == dir)
+    stopifnot(any(contents == dir))
 
     stopifnot(dc_unlink( storage, dir ))
 
@@ -234,11 +234,11 @@ check_storage_for_sanity <- function( storage ){
     file <- "some_file"
     dc_write_lines( storage, text, file )
     text_read <- dc_read_lines( storage, file )
-    all(text == text_read)
+    stopifnot( all(text == text_read) )
 
     line <- dc_fetch_last_line( storage, file )
     stopifnot( line == text[length(text)] )
 
-    stopifnot(dc_unlink( storage, file ))
-    invisible(TRUE)
+    stopifnot( dc_unlink( storage, file ) )
+    invisible( TRUE )
 }

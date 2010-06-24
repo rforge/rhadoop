@@ -1,3 +1,4 @@
+library("hive")
 library("tm.plugin.dc")
 library("multicore")
 
@@ -6,7 +7,18 @@ library("multicore")
 #path <- "/tmp/theussl_NYT"
 #dir.create(path)
 #system(sprintf("tar xzf %s -C %s", tgz, path))
-path <- "/scratch/9157.1.bignode.q/incoming"
+
+hadoop_home <- Sys.getenv( "HADOOP_HOME" )
+hive( hive_create(hadoop_home) )
+hive_start()
+
+local_tmp <- sprintf("/scratch/%s.1.bignode.q", Sys.getenv( "JOB_ID" ))
+stopifnot(file.exists(local_tmp))
+active_rev <- "20100623112729-9-x"
+input <- file.path("/tmp/dcNYT/", active_rev)
+path <- file.path(local_tmp, active_rev)
+
+system( sprintf("%s/bin/hadoop fs -get %s %s", hadoop_home, input, path) )
 
 .read_lines_from_reducer_output <- function( path, cores = 4L )
   mclapply( .get_chunks_from_revision(path),
@@ -27,7 +39,7 @@ construct_term_list <- function( DTM_results, cores = 2L ){
                         mc.cores = cores) ), names = unlist(mclapply(DTM_results, function(x) unlist(lapply(x, function(e) e[[1]])), mc.cores = cores)) )
 }
 
-term_list <- construct_term_list( .read_lines_from_reducer_output(path) )
+system.time(term_list <- construct_term_list( .read_lines_from_reducer_output(path) ))
 
 NYT_DTM <- tm:::.TermDocumentMatrix( i    = rep(seq_along(term_list),
                                    unlist(lapply(term_list, function(x) length(x[[ 2 ]])))),
@@ -38,5 +50,5 @@ NYT_DTM <- tm:::.TermDocumentMatrix( i    = rep(seq_along(term_list),
                                      ncol = 1700000,
                                      dimnames = list(Terms = names(term_list), Docs = as.character(seq_len(1700000))) )
 
-save(DTM_results, file = "DTM_results.rda")
+save(NYT_DTM, file = "NYT_DTM.rda")
 
