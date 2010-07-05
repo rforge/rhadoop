@@ -2,8 +2,9 @@
 
 ## .hinit() initializes the Hadoop framework and returns the corresponding environment.
 .hinit <- function( hadoop_home ) {
+  ## use installation in HADOOP_HOME if it exists, otherwise the Debian default
   if( missing(hadoop_home) )
-    hadoop_home <- Sys.getenv( "HADOOP_HOME" )
+    hadoop_home <- ifelse(file_test("-d", Sys.getenv("HADOOP_HOME")), Sys.getenv("HADOOP_HOME"), "/etc/hadoop")
   tmp <- tryCatch( hive_create(hadoop_home), error = identity )
   hive <- if( inherits(tmp, "error") )
     .hive_default_env()
@@ -43,19 +44,27 @@ hive_create <- function( hadoop_home ){
       }, hive )
   } else {
       local( {
-          hadoop <- file.path(hadoop_home, "bin", "hadoop")
+          hadoop <- if( file_test("-x", Sys.which("hadoop")) )
+            Sys.which("hadoop")
+          else
+            file.path(hadoop_home, "bin", "hadoop")
           version <- hvers
           stopifnot(file.exists(hadoop))
+          
           config_files <- list(core_default = get_hadoop_config("core-default.xml", file.path(hadoop_home, "src/core")),
                                 core_site = get_hadoop_config("core-site.xml", file.path(hadoop_home, "conf")),
                                 hdfs_default = get_hadoop_config("hdfs-default.xml", file.path(hadoop_home, "src/hdfs")),
                                 hdfs_site = get_hadoop_config("hdfs-site.xml", file.path(hadoop_home, "conf")),
                                 mapred_default = get_hadoop_config("mapred-default.xml", file.path(hadoop_home, "src/mapred")),
                                 mapred_site = get_hadoop_config("mapred-site.xml", file.path(hadoop_home, "conf")),
-                                slaves = readLines(file.path(hadoop_home, "conf", "slaves")),
-                                masters = readLines(file.path(hadoop_home, "conf", "masters")))
-          hadoop_jars <- c(file.path(hadoop_home, sprintf("hadoop-%s-core.jar", version)), file.path(hadoop_home, "lib", "commons-logging-1.0.4.jar"))
-
+                                slaves = suppressWarnings(tryCatch(readLines(file.path(hadoop_home, "conf", "slaves")), error = function(x) NA)),
+                                masters = suppressWarnings(tryCatch(readLines(file.path(hadoop_home, "conf", "masters")), error = function(x) NA)))
+          
+          
+          hadoop_jars <- file.path("/usr/share/java/", c("hadoop-core.jar", "commons-logging.jar"))
+          if( !all(file.exists(hadoop_jars)) )
+            hadoop_jars <- file.path(hadoop_home, c(sprintf("hadoop-%s-core.jar", version),  file.path("lib", "commons-logging-1.0.4.jar")))
+    
       }, hive )
   }
   hive
@@ -85,7 +94,7 @@ summary.hive <- function( object, ... ){
     print(object)
     writeLines( "---" )
     writeLines( sprintf("- Hadoop version: %s", hadoop_version(hive(object))) )
-    writeLines( sprintf("- Hadoop home directory: %s", hadoop_home(object)) )
+    writeLines( sprintf("- Hadoop home/conf directory: %s", hadoop_home(object)) )
     writeLines( sprintf("- Namenode: %s", hive_get_masters(object)) )
     writeLines( "- Datanodes:")
     writeLines( sprintf("'- %s\n", hive_get_slaves(object)) )
@@ -154,8 +163,11 @@ hadoop_get_jars <- function( henv )
   get( "hadoop_jars", henv )
 
 hadoop_get_version <- function( hadoop_home ){
-  version <- readLines( file.path(hadoop_home, "contrib", "hod", "bin", "VERSION") )
-  version
+  version_file <- file.path(hadoop_home, "contrib", "hod", "bin", "VERSION")
+  if( file.exists( version_file ) )
+    readLines( version_file )
+  else
+    gsub("Hadoop ", "", system("hadoop version", intern = TRUE, ignore.stderr = TRUE)[1])
 }
 
 ## Controlling the Hadoop framework: currently using the start/stop_all.sh scripts
@@ -163,5 +175,5 @@ hadoop_get_version <- function( hadoop_home ){
 ## FIXME: This may not be platform independent
 hadoop_framework_control <- function( action = c("start", "stop"), henv ){
   action <- match.arg(action)
-  system( file.path(hadoop_home(henv), "bin", sprintf("%s-all.sh", action)), intern = TRUE )
+  system( file.path(hadoop_home(henv), "bin", sprintf("%s-all.sh", action)), intern = TRUE, ignore.stderr = TRUE )
 }

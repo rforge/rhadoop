@@ -47,9 +47,13 @@ hive_set_slaves <- function(slaves, henv){
 
 ## FIXME: con argument
 get_hadoop_config <- function(x, dir){
-  infile <- xmlRoot(xmlTreeParse(file.path(dir, x)))
-  out <- hadoop_parse_xml(infile, "value")
-  names(out) <- hadoop_parse_xml(infile, "name")
+  if( !file.exists(file.path(dir, x)) )
+    out <- NA
+  else {
+    infile <- xmlRoot(xmlTreeParse(file.path(dir, x)))
+    out <- hadoop_parse_xml(infile, "value")
+    names(out) <- hadoop_parse_xml(infile, "name")
+  }
   out
 }
 

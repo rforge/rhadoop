@@ -14,9 +14,9 @@ hive <- local({
     ## initialize hive environment
     hive(.hinit())
     .jpackage(pkgname, lib.loc = libname)
-    
     if( is.environment(hive()) )
     {
+      add_java_DFS_support( henv = hive() )
         if(!hive_start(hive()))
             warning("Hadoop home exists but no Hadoop cluster was started.")
     }
