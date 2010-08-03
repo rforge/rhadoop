@@ -16,12 +16,22 @@
 ## See also .create_hive_from_installation.
 ## Returns on object of class 'hive'.
 hive_create <- function( hadoop_home ){
+  if( missing(hadoop_home) ){
+    hadoop_home_exists <- file.exists( .hadoop_home_dirs() )
+    ifelse( any(hadoop_home_exists),
+            hadoop_home <- .hadoop_home_dirs()[hadoop_home_exists],
+            stop( "could not find Hadoop home directory!")
+           )
+  }
   hive <- .create_hive_from_installation( file_path_as_absolute(hadoop_home) )
   hive_set_nreducer( hive_default_nreducer(hive), hive )
   class( hive ) <- "hive"
   hive
 }
 
+.hadoop_home_dirs <- function(){
+  c("/etc/hadoop")
+}
 ## Given a pointer to a Hadoop installation directory, this function
 ## creates an environment containing all information about the Hadoop
 ## cluster.  We store the hadoop home directory, the hadoop version,
