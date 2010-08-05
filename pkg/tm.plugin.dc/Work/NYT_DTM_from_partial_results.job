@@ -9,4 +9,5 @@
 
 ## copy corpus to local file system
 hostname
+export HADOOP_HOME=/home/stheussl/tmp/hadoop/hadoop_9371
 R --vanilla < ./NYT_DTM_from_partial_results.R

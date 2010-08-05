@@ -156,11 +156,13 @@ TermDocumentMatrix.DistributedCorpus <- function( x, control = list() ){
         ## We need to get the control list from the environment variables
         control_file <- Sys.getenv("_HIVE_TERMFREQ_CONTROL_")
 
-        if( file.exists(control_file) )
-            load( control_file )
-        else
-            control <- list()
-
+        ## FIXME!!!!! temporary added:
+        stopifnot(file.exists(control_file))
+        if( file.exists(control_file) ) {
+          load( control_file )
+        } else {
+          control <- list()
+        }
         ##split_line <- tm.plugin.dc:::dc_split_line
         split_line <- function(line) {
           val <- unlist(strsplit(line, "\t"))

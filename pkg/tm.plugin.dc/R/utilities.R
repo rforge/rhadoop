@@ -22,8 +22,8 @@ dc_get_text_mapping_from_revision <- function( x,
   attr( x, "Mapping" )[[ revision ]]
 
 ## hash table constructor
-dc_hash <- function( n )
-  matrix(0L, nrow = n, ncol = 2L, dimnames = list(NULL, c("Chunk", "Position")))
+dc_hash <- function( n, ids = NULL )
+  matrix(0L, nrow = n, ncol = 2L, dimnames = list(ifelse(is.null(ids), character(n), ids), c("Chunk", "Position")))
 
 ## serializes a given object to a character string
 ## FIXME: we need to add a second gsub before we replace \n with \\n as otherwise

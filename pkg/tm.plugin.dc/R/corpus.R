@@ -20,7 +20,7 @@ DistributedCorpus <-
     function( source,
               readerControl = list(reader   = source$DefaultReader,
                                    language = "eng"),
-              storage = NULL, keys = NULL, ... ) {
+              storage = NULL, ... ) {
 
     if( is.null(storage) )
         storage <- dc_default_storage()
@@ -43,14 +43,12 @@ DistributedCorpus <-
     ##                     chunk and position of the given document
     ## - outlines       -> contains the current serialized documents to be
     ##                     written to the DFS
-    if( is.null(keys) )
-      keys <- seq_along( source$FileList )
-    stopifnot( is.integer(keys) && (length(keys) == length(source$FileList)) )
+    keys <- seq_len( source$Length )
     ind <- 0L
     chunk_iterator <- 1L
     position <- 1L
     size <- 0L
-    mapping <- dc_hash( length(source$FileList) )
+    mapping <- dc_hash( source$Length )
     outlines <- character( 0L )
     ## FIXME: for debugging purposes
     timer_start <- proc.time()["elapsed"]
@@ -64,13 +62,15 @@ DistributedCorpus <-
         ind <- ind + 1
         mapping[ind, ] <- c(chunk_iterator, position)
         position <- position + 1L
+        doc <- readerControl$reader(elem,
+                                                    readerControl$language,
+                                                    source$FileList[ind])
+        rownames(mapping)[ind] <- ID(doc)
         ## create vector containing serialized documents as <key, value> pairs
         outlines <- c( outlines,
                       sprintf("%s\t%s",
                               as.character(keys[ind]),
-                              dc_serialize_object(readerControl$reader(elem,
-                                                    readerControl$language,
-                                                    source$FileList[ind]))) )
+                              dc_serialize_object(doc)) )
 
         ## write chunk if size greater than pre-defined chunksize
         if( object.size(outlines) >= dc_chunksize(storage) ) {
@@ -155,6 +155,7 @@ as.DistributedCorpus.Corpus <- function(x, storage = NULL, ...){
         value <- dc_serialize_object( x[[i]] )
 
         mapping[i, ] <- c(chunk_iterator, position)
+        rownames(mapping)[i] <- ID(x[[i]])
         position <- position + 1L
 
         outlines <- c(outlines, sprintf("%s\t%s", as.character(i), value))
@@ -259,7 +260,7 @@ updateRevision <- function( corpus, revision ){
 
     keyorder <- order( firstkeys )
     ## now populate the hash table
-    hash_table <- dc_hash(length(corpus))
+    hash_table <- dc_hash(length(corpus), ids = rownames(dc_get_text_mapping_from_revision(corpus)))
     ##hash_table[, "Position"] <- seq_len(length(corpus))
 
     for(i in seq_along(chunks)){
