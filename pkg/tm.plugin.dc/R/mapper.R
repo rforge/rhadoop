@@ -36,7 +36,8 @@ function(x, FUN, ..., useMeta = FALSE, lazy = FALSE) {
     cmdenv_arg = NULL
 
     cmdenv_arg <- c( cmdenv_arg,
-                     sprintf("_HIVE_FUNCTION_TO_APPLY_=%s", foo_file) )
+                     sprintf("_HIVE_FUNCTION_TO_APPLY_=%s",
+                             dc_serialize_object(FUN)) )
     rev <- .tm_map_reduce( x, .generate_preprocess_mapper(),
                            cmdenv_arg = cmdenv_arg, useMeta = useMeta, ... )
 
@@ -83,14 +84,19 @@ function(x, FUN, ..., useMeta = FALSE, lazy = FALSE) {
   function(){
     require("tm")
     FUN <- NA
-    load(Sys.getenv("_HIVE_FUNCTION_TO_APPLY_"))
+    serialized <- Sys.getenv("_HIVE_FUNCTION_TO_APPLY_")
+    control <- if( serialized == "" ){
+        list()
+    } else {
+        unserialize(charToRaw(gsub("\\n", "\n", serialized, fixed = TRUE)))
+    }
 
     split_line <- tm.plugin.dc:::dc_split_line
     ##split_line <- function(line) {
     ##  val <- unlist(strsplit(line, "\t"))
     ##  list( key = val[1], value = gsub("\n", "\\n", rawToChar(serialize(val[2], NULL, TRUE)), fixed = TRUE) )
     ##}
-      
+
     mapred_write_output <- function(key, value)
       cat( sprintf("%s\t%s",
                    key,

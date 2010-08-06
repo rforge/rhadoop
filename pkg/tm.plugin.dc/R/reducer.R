@@ -10,31 +10,33 @@ TermDocumentMatrix.DistributedCorpus <- function( x, control = list() ){
     ## Start MapReduce job based on storage class
     rev <- .dc_TermDocumentMatrix( dc_storage(x), x, control )
 
-    ## Retrieve results
+    ## Retrieve partial results from file system (term / {key / term frequency})
+    ## {} indicates serialized object
     results <- lapply( .read_lines_from_reducer_output( dc_storage(x), rev ),
                        function(x) strsplit(x, "\t") )
 
-    terms <- dc_decode_term( unlist( lapply(results, function(x) x[[1]][1])) )
-    term_order <- order(terms)
+    ## first extract the terms. NOTE: they are not necessarily unique as there may be
+    ## some terms duplicated among different chunks. Terms derived from the same chunk are unique.
+    terms <- factor(dc_decode_term(unlist(lapply(results, function(x) x[[1]][1])) ))
+    uniq_terms <- sort(unique(as.character(terms)))
+    levels(terms) <- seq_along(levels(terms))
 
-    results <- lapply( results[term_order],
+    ## unserialize count and doc data, i.e., list( term = list( c(key/doc), c(tf) ) )
+    results <- lapply( results,
                        function(x) dc_unserialize_object(x[[ 1 ]][2]) )
 
-    .fix_TDM( tm:::.TermDocumentMatrix(i    = rep(seq_len(length(terms)),
-                                          unlist(lapply(results, function(x) length(x[[ 2 ]])))),
-                                       j    = unlist(lapply(results, function(x) x[[ 1 ]])),
-                                       v    = as.numeric(unlist(lapply(results, function(x) x[[ 2 ]]))),
-                                       nrow = length(terms),
+    ## first we need to sort indices based on the row index (row major order)
+    ## then we put the sparse matrix into column major order (via .fix_TDM())
+    i <- rep(as.integer(terms), unlist(lapply(results, function(x) length(x[[ 1 ]]))))
+    rmo <- order(i)
+    .fix_TDM( tm:::.TermDocumentMatrix(i    = as.integer(i)[rmo],
+                                       j    = unlist(lapply(results, function(x) x[[ 1 ]]))[rmo],
+                                       v    = as.numeric(unlist(lapply(results, function(x) x[[ 2 ]])))[rmo],
+                                       nrow = length(uniq_terms),
                                        ncol = length(x),
-                                       dimnames = list(Terms = terms[term_order],
+                                       dimnames = list(Terms = uniq_terms,
                                                        Docs = rownames(dc_get_text_mapping_from_revision(x)))) )
 }
-
-    ##.fix_TDM( do.call( c, lapply(chunks, function(x) {
-    ##  object <- dc_read_lines(storage, x)
-    ##  dc_unserialize_object( strsplit(object, "\t")[[ 1 ]][2] ) }) ),
-    ##         attr(x, "Keys") )
-
 
 .read_lines_from_reducer_output <- function( storage, rev )
   unlist( lapply(.get_chunks_from_revision(storage, rev),
@@ -105,20 +107,12 @@ dc_decode_term <- function(x)
     cmdenv_arg <- NULL
     if( length(control) ){
         ## TODO: shouldn't we have a function to check control for sanity?
-        ## NOTE: the control file MUST be on a network file system mounted on
-        ## every node; TODO: should go to the HDFS eventually
-        control_file <- "~/tmp/_hive_termfreq_control.Rda"
-        save(control, file = control_file)
-        cmdenv_arg <- sprintf("_HIVE_TERMFREQ_CONTROL_=%s", control_file)
+        cmdenv_arg <- sprintf("_HIVE_TERMFREQ_CONTROL_=%s", dc_serialize_object(control))
     }
     ## MAP is basically a call to termFreq
     ## REDUCE builds then the termDoc matrix
     ## TODO: implement check nreducers <= nDocs (or chunks?)
     ## FIXME: old streaming job. can be removed once new version works
-
-    #attr(x, "ActiveRevision") <- .tm_map_reduce(x,
-    #                                            .generate_TDM_mapper(),
-    #                                            cmdenv_arg = cmdenv_arg)
 
     rev_out <- .tm_map_reduce(x,
                               .generate_TDM_mapper(),
@@ -129,8 +123,6 @@ dc_decode_term <- function(x)
     rev_out
 }
 
-## TODO: we should support several 'map functions' e.g. stripWhitespace,
-## stemming, etc.
 .tm_map_reduce <- function( x, MAP, REDUCE = NULL, ..., cmdenv_arg = NULL,
                             useMeta = FALSE, lazy = FALSE ) {
     stopifnot( inherits(x, "DistributedCorpus") )
@@ -161,15 +153,13 @@ dc_decode_term <- function(x)
     function(){
         require("tm")
 
-        ## We need to get the control list from the environment variables
-        control_file <- Sys.getenv("_HIVE_TERMFREQ_CONTROL_")
-
-        ## FIXME!!!!! temporary added:
-        #stopifnot( file.exists(control_file) )
-        if( file.exists(control_file) ) {
-          load( control_file )
+        ## We need to get the control argument list from the
+        ## environment variables
+        serialized <- Sys.getenv("_HIVE_TERMFREQ_CONTROL_")
+        control <- if( serialized == "" ){
+            list()
         } else {
-          control <- list()
+            unserialize(charToRaw(gsub("\\n", "\n", serialized, fixed = TRUE)))
         }
         ##split_line <- tm.plugin.dc:::dc_split_line
         split_line <- function(line) {
