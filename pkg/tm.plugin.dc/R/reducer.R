@@ -14,18 +14,20 @@ TermDocumentMatrix.DistributedCorpus <- function( x, control = list() ){
     results <- lapply( .read_lines_from_reducer_output( dc_storage(x), rev ),
                        function(x) strsplit(x, "\t") )
 
-    terms <- unlist( lapply(results, function(x) x[[1]][1]) )
-    results <- lapply( results,
-                       function(x) dc_unserialize_object(x[[1]][2]) )
+    terms <- dc_decode_term( unlist( lapply(results, function(x) x[[1]][1])) )
+    term_order <- order(terms)
 
-    .fix_TDM( tm:::.TermDocumentMatrix( i    = rep(seq_len(length(terms)),
+    results <- lapply( results[term_order],
+                       function(x) dc_unserialize_object(x[[ 1 ]][2]) )
+
+    .fix_TDM( tm:::.TermDocumentMatrix(i    = rep(seq_len(length(terms)),
                                           unlist(lapply(results, function(x) length(x[[ 2 ]])))),
                                        j    = unlist(lapply(results, function(x) x[[ 1 ]])),
                                        v    = as.numeric(unlist(lapply(results, function(x) x[[ 2 ]]))),
                                        nrow = length(terms),
                                        ncol = length(x),
-                                       dimnames = list(Terms = terms, Docs = as.character(seq_len(length(x)))) ),
-             attr(x, "Keys") )
+                                       dimnames = list(Terms = terms[term_order],
+                                                       Docs = rownames(dc_get_text_mapping_from_revision(x)))) )
 }
 
     ##.fix_TDM( do.call( c, lapply(chunks, function(x) {
@@ -88,10 +90,16 @@ TermDocumentMatrix.DistributedCorpus <- function( x, control = list() ){
     env <- as.list(env)
     env <- lapply(env, tm.plugin.dc:::.collector2, NULL)
     for( term in names(env) )
-        writeLines( sprintf("%s\t%s", term,
+        writeLines( sprintf("%s\t%s", dc_encode_term(term),
                      dc_serialize_object(env[[ term ]])), con = con2 )
     close(con2)
 }
+
+dc_encode_term <- function(x)
+    gsub("\n", "\\\\n", x)
+
+dc_decode_term <- function(x)
+    gsub("\\\\n", "\n", x)
 
 .dc_TermDocumentMatrix.HDFS <- function(storage, x, control){
     cmdenv_arg <- NULL
@@ -157,7 +165,7 @@ TermDocumentMatrix.DistributedCorpus <- function( x, control = list() ){
         control_file <- Sys.getenv("_HIVE_TERMFREQ_CONTROL_")
 
         ## FIXME!!!!! temporary added:
-        stopifnot(file.exists(control_file))
+        #stopifnot( file.exists(control_file) )
         if( file.exists(control_file) ) {
           load( control_file )
         } else {
@@ -260,10 +268,9 @@ TermDocumentMatrix.DistributedCorpus <- function( x, control = list() ){
 }
 
 ## FIXME: we can do this more efficiently
-.fix_TDM <- function(x, ids){
+.fix_TDM <- function(x){
   #x$ncol <- x$ncol + length( not_included )
   #x$dimnames$Docs <- c(x$dimnames$Docs, as.character(not_included))
-  x <- x[sort(Terms(x)), ]
   ## column major order
   cmo <- order(x$j)
   x$i <- x$i[cmo]
