@@ -41,8 +41,7 @@ control <- list( removePunctuation = TRUE,
 dc <- setRevision(dc, getRevisions(dc)[[1]])
 tdm_dc <- TermDocumentMatrix(dc, control = control )
 tdm_c <- TermDocumentMatrix(crude, control = control )
-stopifnot( all(sort(Terms(tdm_dc)) == sort(Terms(tdm_c))) )
-stopifnot( all(row_sums(tdm_dc)[Terms(tdm_c)] == row_sums(tdm_c)) )
+stopifnot(identical(tdm_c, tdm_dc))
 
 ##input <- "~/Data/Reuters/reuters_xml"
 ##run_time_dc <-
@@ -79,7 +78,7 @@ if( inherits(tryCatch(hive_is_available(), error = identity), "error") ){
     hive( hive_create("/home/theussl/lib/hadoop-0.20.1") )
     hive_start()
 }
-stor <- dc_storage_create(type = "HDFS")
+stor <- dc_storage_create(type = "HDFS", "/tmp/unittest")
 stor
 
 
@@ -108,11 +107,11 @@ control <- list( removePunctuation = TRUE,
                  removeNumbers = TRUE,
                  stemming = TRUE,
                  stopwords = TRUE )
-
+hive_set_nreducer(2)
+hdc <- setRevision(hdc, getRevisions(hdc)[[1]])
 tdm_hdc <- TermDocumentMatrix(hdc, control = control )
 tdm_c <- TermDocumentMatrix(crude, control = control )
-stopifnot( all(sort(Terms(tdm_hdc)) == sort(Terms(tdm_c))) )
-stopifnot( all(row_sums(tdm_hdc)[Terms(tdm_c)] == row_sums(tdm_c)) )
+stopifnot(identical(tdm_c, tdm_hdc))
 
 ###############################################################################
 ## Construct Reuters 21578 corpus via Hadoop

@@ -27,22 +27,14 @@ function(x, FUN, ..., useMeta = FALSE, lazy = FALSE) {
 }
 
 .dc_tm_map.HDFS <- function( storage, x, FUN, useMeta, ... ){
-
-    ## FIXME: this file MUST be on a network file system mounted on every node
-    foo_file <- "~/tmp/_hive_map_function.Rda"
-    save(FUN, file = foo_file)
-
     ## SET a user specific command environment variable here
     cmdenv_arg = NULL
 
     cmdenv_arg <- c( cmdenv_arg,
                      sprintf("_HIVE_FUNCTION_TO_APPLY_=%s",
                              dc_serialize_object(FUN)) )
-    rev <- .tm_map_reduce( x, .generate_preprocess_mapper(),
-                           cmdenv_arg = cmdenv_arg, useMeta = useMeta, ... )
-
-    unlink(foo_file)
-    rev
+   .tm_map_reduce( x, .generate_preprocess_mapper(),
+                   cmdenv_arg = cmdenv_arg, useMeta = useMeta, ... )
 }
 
 .local_disk_preprocess_mapper <- function( FUN, input, output ){
@@ -83,10 +75,9 @@ function(x, FUN, ..., useMeta = FALSE, lazy = FALSE) {
 .generate_preprocess_mapper <- function() {
   function(){
     require("tm")
-    FUN <- NA
     serialized <- Sys.getenv("_HIVE_FUNCTION_TO_APPLY_")
-    control <- if( serialized == "" ){
-        list()
+    FUN <- if( serialized == "" ){
+        tolower
     } else {
         unserialize(charToRaw(gsub("\\n", "\n", serialized, fixed = TRUE)))
     }

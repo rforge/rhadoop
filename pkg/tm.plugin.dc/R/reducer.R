@@ -114,13 +114,10 @@ dc_decode_term <- function(x)
     ## TODO: implement check nreducers <= nDocs (or chunks?)
     ## FIXME: old streaming job. can be removed once new version works
 
-    rev_out <- .tm_map_reduce(x,
-                              .generate_TDM_mapper(),
-                              .generate_TDM_reducer(),
-                              cmdenv_arg = cmdenv_arg)
-    if( !is.null(cmdenv_arg) )
-        unlink(control_file)
-    rev_out
+    .tm_map_reduce(x,
+                   .generate_TDM_mapper(),
+                   .generate_TDM_reducer(),
+                   cmdenv_arg = cmdenv_arg)
 }
 
 .tm_map_reduce <- function( x, MAP, REDUCE = NULL, ..., cmdenv_arg = NULL,
