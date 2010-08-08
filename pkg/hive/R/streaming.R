@@ -6,10 +6,10 @@
 ## TODO: what to do with mapper_args, reducer_args?
 ## TODO: what if you want to supply more than 1 mapper/reducer function?
 hive_stream <- function( mapper, reducer, input, output, henv = hive(),
-                         mapper_args = NULL, reducer_args = NULL, cmdenv_arg=NULL ) {  
+                         mapper_args = NULL, reducer_args = NULL, cmdenv_arg=NULL ) {
   ## check directories in DFS
   stopifnot( DFS_dir_exists(input, henv) )
-  
+
   if( missing(reducer) ){
     reducer <- NULL
   }
@@ -19,7 +19,7 @@ hive_stream <- function( mapper, reducer, input, output, henv = hive(),
   .hadoop_check_function_sanity( mapper )
   ## generate mapper and reducer executables
   mapper_exec <- .generate_executable( mapper, .get_hadoop_executable(type = "mapper") )
-  ## check if mapper scripts exists  
+  ## check if mapper scripts exists
   stopifnot( file.exists(mapper_exec) )
   ## now the reducer (if available)
   reducer_exec <- NULL
@@ -56,7 +56,7 @@ hive_stream <- function( mapper, reducer, input, output, henv = hive(),
   if(is.null(cmdenv_arg))
     cmdenv_arg <- ""
   else
-    cmdenv_arg <- paste("-cmdenv", as.character(cmdenv_arg), collapse = " ")
+    cmdenv_arg <- sprintf( "-cmdenv '%s'", paste(as.character(cmdenv_arg), collapse = " ") )
   out <- system(sprintf('%s jar %s/contrib/streaming/hadoop-*-streaming.jar -D %s -input %s -output %s %s %s %s %s',
                  hadoop(henv), hadoop_home(henv), streaming_args, input, output,
                  mapper_arg, reducer_arg, files, cmdenv_arg),
