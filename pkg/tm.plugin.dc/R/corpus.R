@@ -20,7 +20,7 @@ DistributedCorpus <-
     function( source,
               readerControl = list(reader   = source$DefaultReader,
                                    language = "eng"),
-              storage = NULL, ... ) {
+              storage = NULL, keys = NULL, ... ) {
 
     if( is.null(storage) )
         storage <- dc_default_storage()
@@ -34,7 +34,8 @@ DistributedCorpus <-
     dc_dir_create(storage, activeRev)
 
     ## Initialization
-    ## - keys           -> uniquely identifies document in corpus
+    ## - keys           -> uniquely identifies document in corpus, usually from 1:nDocs
+    ##                     but can be overridden by 'keys' argument. We use it e.g., for parallel corpus construction
     ## - chunk_iterator -> specifies the file chunk for each document
     ## - position       -> specifies the position of the document, i.e.,
     ##                     the row in the chunk
@@ -43,7 +44,10 @@ DistributedCorpus <-
     ##                     chunk and position of the given document
     ## - outlines       -> contains the current serialized documents to be
     ##                     written to the DFS
-    keys <- seq_len( source$Length )
+    if( is.null(keys) )
+      keys <- seq_len( source$Length )
+    stopifnot( is.integer(keys) && (length(keys) == length(source$FileList)) )
+    ##keys <- seq_len( source$Length )
     ind <- 0L
     chunk_iterator <- 1L
     position <- 1L
@@ -111,10 +115,10 @@ DistributedCorpus <-
 }
 
 print.DistributedCorpus <- function(x, ...) {
-    cat(sprintf(ngettext(length(Keys(x)),
+    cat(sprintf(ngettext(length(x),
                          "A corpus with %d text document\n",
                          "A corpus with %d text documents\n"),
-                length(Keys(x))))
+                length(x)))
     invisible(x)
 }
 
