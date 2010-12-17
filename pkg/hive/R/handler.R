@@ -4,7 +4,7 @@
 .hinit <- function( hadoop_home ) {
   ## use installation in HADOOP_HOME if it exists, otherwise the Debian default
   if( missing(hadoop_home) )
-    hadoop_home <- ifelse(file_test("-d", Sys.getenv("HADOOP_HOME")), Sys.getenv("HADOOP_HOME"), "/etc/hadoop")
+    hadoop_home <- ifelse(tools:::file_test("-d", Sys.getenv("HADOOP_HOME")), Sys.getenv("HADOOP_HOME"), "/etc/hadoop")
   tmp <- tryCatch( hive_create(hadoop_home), error = identity )
   hive <- if( inherits(tmp, "error") )
     .hive_default_env()
@@ -54,13 +54,13 @@ hive_create <- function( hadoop_home ){
       }, hive )
   } else {
       local( {
-          hadoop <- if( file_test("-x", Sys.which("hadoop")) )
+          hadoop <- if( tools:::file_test("-x", Sys.which("hadoop")) )
             Sys.which("hadoop")
           else
             file.path(hadoop_home, "bin", "hadoop")
           version <- hvers
           stopifnot(file.exists(hadoop))
-          
+
           config_files <- list(core_default = get_hadoop_config("core-default.xml", file.path(hadoop_home, "src/core")),
                                 core_site = get_hadoop_config("core-site.xml", file.path(hadoop_home, "conf")),
                                 hdfs_default = get_hadoop_config("hdfs-default.xml", file.path(hadoop_home, "src/hdfs")),
@@ -69,12 +69,12 @@ hive_create <- function( hadoop_home ){
                                 mapred_site = get_hadoop_config("mapred-site.xml", file.path(hadoop_home, "conf")),
                                 slaves = suppressWarnings(tryCatch(readLines(file.path(hadoop_home, "conf", "slaves")), error = function(x) NA)),
                                 masters = suppressWarnings(tryCatch(readLines(file.path(hadoop_home, "conf", "masters")), error = function(x) NA)))
-          
-          
+
+
           hadoop_jars <- file.path("/usr/share/java/", c("hadoop-core.jar", "commons-logging.jar"))
           if( !all(file.exists(hadoop_jars)) )
             hadoop_jars <- file.path(hadoop_home, c(sprintf("hadoop-%s-core.jar", version),  file.path("lib", "commons-logging-1.0.4.jar")))
-    
+
       }, hive )
   }
   hive
@@ -114,11 +114,16 @@ summary.hive <- function( object, ... ){
 ## NOTE: Java DFS support is only available for the current cluster.
 ##       Thus, add/remove DFS support in each call to hive_start/stop
 hive_start <- function( henv = hive() ){
+    ## does nothing if hadoop daemons are already running
     if( DFS_is_registered(henv) )
         return( invisible(TRUE) )
-    ## does nothing if hadoop daemons already running
-    hadoop_framework_control( "start", henv )
-    ## NOTE: really important that java DFS support is added AFTER
+    ## otherwise start the Hadoop framework ...
+    ## FIXME: on Debian systems Hadoop daemons are controlled via
+    ##        /etc/init.d scripts (started automatically)
+    if( file.exists(file.path(hadoop_home(henv), "bin", sprintf("%s-all.sh", "start"))) )
+        hadoop_framework_control( "start", henv )
+    ## ... and add Java DFS support
+    ## NOTE: really important that Java DFS support is added AFTER
     ## framework has been started
     status <- add_java_DFS_support( henv = hive() )
     ## if there are problems starting hive, close it
@@ -133,7 +138,10 @@ hive_start <- function( henv = hive() ){
 hive_stop <- function( henv = hive() ){
   if( DFS_is_registered(henv) ){
     remove_java_DFS_support( henv )
-    hadoop_framework_control( "stop", henv )
+    ## FIXME: on Debian systems Hadoop daemons are controlled via
+    ##        /etc/init.d scripts (stopped automatically)
+    if( file.exists(file.path(hadoop_home(henv), "bin", sprintf("%s-all.sh", "stop"))) )
+        hadoop_framework_control( "stop", henv )
   }
   else
     warning( "No Hadoop cluster running. Nothing to stop." )

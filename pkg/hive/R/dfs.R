@@ -62,7 +62,7 @@ DFS_delete <- function( file, recursive = FALSE, henv = hive() ) {
     warning(sprintf("cannot remove directory '%s'. Use 'recursive = TRUE' instead.", file))
     return(FALSE)
   }
-  
+
   status <- .DFS_delete( file, henv )
   if(!status){
     warning(sprintf("cannot remove file '%s'.", file))
@@ -79,18 +79,18 @@ DFS_dir_remove <- function(path, recursive = TRUE, henv = hive()){
     warning(sprintf("'%s' is not a directory.", path))
     FALSE
   }
-} 
-     
+}
+
 
 ## private int ls(String srcf, boolean recursive) throws IOException {
 ##    Path srcPath = new Path(srcf);
 ##    FileSystem srcFs = srcPath.getFileSystem(this.getConf());
 ##    FileStatus[] srcs = srcFs.globStatus(srcPath);
 ##    if (srcs==null || srcs.length==0) {
-##      throw new FileNotFoundException("Cannot access " + srcf + 
+##      throw new FileNotFoundException("Cannot access " + srcf +
 ##          ": No such file or directory.");
 ##    }
-## 
+##
 ##    boolean printHeader = (srcs.length == 1) ? true: false;
 ##    int numOfErrors = 0;
 ##    for(int i=0; i<srcs.length; i++) {
@@ -106,7 +106,7 @@ DFS_list <- function( path = ".", henv = hive() ) {
     warning(sprintf("'%s' is not a readable directory", path))
     return(character(0))
   }
-  
+
   splitted <- strsplit(grep(path, hive:::.DFS_intern("-ls", path, henv), value = TRUE), path)
   sapply(splitted, function(x) basename(x[2]))
 }
@@ -128,7 +128,7 @@ DFS_tail <- function(file, n = 6L, size = 1024, henv = hive() ){
     stopifnot(DFS_is_registered(henv))
     hdfs <- HDFS(henv)
     ioutils <- IOUTILS(henv)
-  
+
     hdfs_file <- HDFS_path(file)
     len <- hdfs$getFileStatus(hdfs_file)$getLen()
     offset <- ifelse(len > size, len - size, 0)
@@ -142,6 +142,7 @@ DFS_tail <- function(file, n = 6L, size = 1024, henv = hive() ){
     routput <- .jnew("org/rosuda/JRI/RConsoleOutputStream", .jengine(TRUE), as.integer(0))
     ## now we need to capture the contents from the console usingg a text connection
     ## we save the results in the object out
+    out <- character(0)
     con <- textConnection("out", open = "w")
     sink(file = con)
     ioutils$copyBytes(inputstream, routput, as.integer(1024), TRUE)
@@ -183,19 +184,19 @@ DFS_write_lines <- function( text, file, henv = hive() ) {
         warning(sprintf("file '%s' already exists.", file))
         return(NA)
     }
-    
+
     if(!length(text))
         stop("text length of zero not supported.")
-    
+
     hdfs <- HDFS(henv)
-    
+
     outputstream <- hdfs$create(HDFS_path(file))
     for( i in seq_along(text) ){
         outputstream$writeBytes(text[i])
         outputstream$writeBytes("\n")
     }
     outputstream$close()
-    
+
     invisible(file)
 }
 
@@ -213,7 +214,7 @@ DFS_read_lines <- function( file, n = -1L, henv = hive() ) {
     inputstream <- hdfs$open(HDFS_path(file))
     if( n <= 0 ){
         inputstream$seek(.jlong(offset))
-        
+
         ## we need to copy the contents of the file to an output stream
         ## Thus, for the time being we use the JRI class to RConsoleOutputStream divert
         ## the outputstream to the R console
@@ -235,7 +236,7 @@ DFS_read_lines <- function( file, n = -1L, henv = hive() ) {
     }
     out
 }
-  
+
 ## serialize R object from DFS
 DFS_get_object <- function( file, henv = hive() ) {
   con <- .DFS_pipe( "-cat", file, open = "r", henv = henv )
@@ -265,14 +266,14 @@ DFS_get_object <- function( file, henv = hive() ) {
 
 .DFS_stat <- function(x, henv){
     stopifnot( DFS_is_registered(henv) )
-    hdfs <- HDFS(henv) 
+    hdfs <- HDFS(henv)
     stat <- hdfs$globStatus(HDFS_path(x))
     if(is.null(stat)){
         warning(sprintf("cannot stat '%s': No such file or directory", x))
         return(NULL)
     }
     ## for the time being return TRUE
-    ## TODO: this should return an R object containing the stat information 
+    ## TODO: this should return an R object containing the stat information
     TRUE
 }
 
