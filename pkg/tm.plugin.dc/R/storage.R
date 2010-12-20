@@ -60,7 +60,7 @@ dc_default_storage <- function(){
                  fetch_last_line = function(x) utils::tail(base::readLines(as.character(x)), n = 1L),
                  list_directory  = base::dir,
                  read_lines      = function(x) base::readLines(as.character(x)),
-                 unlink          = function(x) base::file.remove(x),
+                 unlink          = function(x) tm.plugin.dc:::lfs_remove(x),
                  write_lines     = function(text, fil) base::writeLines(text, con = as.character(fil)), ...
                 )
 }
@@ -241,4 +241,23 @@ check_storage_for_sanity <- function( storage ){
 
     stopifnot( dc_unlink( storage, file ) )
     invisible( TRUE )
+}
+
+################################################################################
+## local file system manipulators
+################################################################################
+
+lfs_remove <- function( x ){
+    foo <- file.remove
+    ## on Windows file.remove does not remove empty directories
+    ## so we need to check for it
+    if( .Platform$OS.type == "windows" )
+        if( length(dir(x, recursive = TRUE, all.files = TRUE)) )
+            warning( sprintf("Directory %s not empty, so not removed.", x) )
+        else
+            foo <- function( x ) {
+                unlink( x, recursive = TRUE )
+                TRUE
+            }
+    foo( x )
 }

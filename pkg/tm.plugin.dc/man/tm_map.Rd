@@ -23,7 +23,7 @@
 }
 \examples{
 data("crude")
-tm_map(as.DistributedCorpus(crude), stemDocument)
+tm_map(as.DistributedCorpus(crude), tolower)
 }
 \seealso{
   \code{\link[tm]{getTransformations}} for available transformations.
