@@ -73,48 +73,57 @@ function(x, FUN, ..., useMeta = FALSE, lazy = FALSE) {
 
 ## Hadoop Streaming mapper for preprocessing tasks
 .generate_preprocess_mapper <- function() {
-  function(){
-    require("tm")
-    serialized <- Sys.getenv("_HIVE_FUNCTION_TO_APPLY_")
-    FUN <- if( serialized == "" ){
-        tolower
-    } else {
-        unserialize(charToRaw(gsub("\\n", "\n", serialized, fixed = TRUE)))
+    function(){
+        require("tm")
+        ## we need this in order to let only the actual output be
+        ## written to stdout, does not work with current stemDocument
+        ## so not using until needed
+        #sink(stderr(), type = "output")
+        hive:::redirect_java_output(NULL)
+        serialized <- Sys.getenv("_HIVE_FUNCTION_TO_APPLY_")
+        FUN <- if( serialized == "" ){
+            tolower
+        } else {
+            unserialize(charToRaw(gsub("\\n", "\n", serialized, fixed = TRUE)))
+        }
+
+        split_line <- tm.plugin.dc:::dc_split_line
+        ##split_line <- function(line) {
+        ##  val <- unlist(strsplit(line, "\t"))
+        ##  list( key = val[1], value = gsub("\n", "\\n", rawToChar(serialize(val[2], NULL, TRUE)), fixed = TRUE) )
+        ##}
+
+        mapred_write_output <- function(key, value){
+            #sink()
+            cat( sprintf("%s\t%s",
+                         key,
+                         tm.plugin.dc:::dc_serialize_object(value)), sep = "\n" )
+            #sink(stderr(), type = "output")
+        }
+
+        first <- TRUE
+        con <- file("stdin", open = "r")
+        while (length(line <- readLines(con, n = 1L, warn = FALSE)) > 0) {
+            input <- split_line(line)
+            result <- FUN(input$value)
+            if(first){
+                firstkey <- input$key
+                first <- FALSE
+            }
+
+            if(length(result)){
+                mapred_write_output(input$key, result)
+            } else
+            mapred_write_output(input$key, PlainTextDocument(id = ID(result)))
+        }
+
+        ## In the last step we need to add a stamp to this chunk
+        ## <key:randomstring,
+        ## value_serialized:c(firstdocumentkey,lastdocumentkey)>
+        mapred_write_output(paste(paste(sample(c(letters, 0:9), 10, replace = TRUE),
+                                        collapse = ""), system("hostname", intern = TRUE), sep = "-"),
+                            c(First_key = as.integer(firstkey),
+                              Last_key  = as.integer(input$key)))
+        close(con)
     }
-
-    split_line <- tm.plugin.dc:::dc_split_line
-    ##split_line <- function(line) {
-    ##  val <- unlist(strsplit(line, "\t"))
-    ##  list( key = val[1], value = gsub("\n", "\\n", rawToChar(serialize(val[2], NULL, TRUE)), fixed = TRUE) )
-    ##}
-
-    mapred_write_output <- function(key, value)
-      cat( sprintf("%s\t%s",
-                   key,
-                   tm.plugin.dc:::dc_serialize_object(value)), sep = "\n" )
-
-    first <- TRUE
-    con <- file("stdin", open = "r")
-    while (length(line <- readLines(con, n = 1L, warn = FALSE)) > 0) {
-      input <- split_line(line)
-      result <- FUN(input$value)
-      if(first){
-        firstkey <- input$key
-        first <- FALSE
-      }
-
-      if(length(result)){
-        mapred_write_output(input$key, result)
-      } else
-        mapred_write_output(input$key, PlainTextDocument(id = ID(result)))
-    }
-
-    ## In the last step we need to add a stamp to this chunk
-    ## <key:randomstring, value_serialized:c(firstdocumentkey,lastdocumentkey)>
-    mapred_write_output(paste(paste(sample(c(letters, 0:9), 10, replace = TRUE),
-                             collapse = ""), system("hostname", intern = TRUE), sep = "-"),
-                        c(First_key = as.integer(firstkey),
-                          Last_key  = as.integer(input$key)))
-    close(con)
-  }
 }

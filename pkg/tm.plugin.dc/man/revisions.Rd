@@ -27,7 +27,7 @@ setRevision( corpus, revision )
 data("crude")
 dc <- as.DistributedCorpus(crude)
 ## do some preprocessing
-dc <- tm_map(dc, stemDocument)
+dc <- tm_map(dc, tolower)
 ## retrieve available revisions
 revs <- getRevisions(dc)
 revs

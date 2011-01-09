@@ -12,7 +12,7 @@ add_java_DFS_support <- function(henv){
   hdfs_site <- .jnew("org/apache/hadoop/fs/Path", file.path(hadoop_home(henv), "conf", "hdfs-site.xml"))
   mapred_default <- .jnew("org/apache/hadoop/fs/Path", file.path(hadoop_home(henv), "src", "mapred", "mapred-default.xml"))
   mapred_site <- .jnew("org/apache/hadoop/fs/Path", file.path(hadoop_home(henv), "conf", "mapred-site.xml"))
-  
+
   configuration <- .jnew("org/apache/hadoop/conf/Configuration")
   .jcall(configuration, "V", "addResource", core_default)
   .jcall(configuration, "V", "addResource", core_site)
@@ -33,7 +33,7 @@ add_java_DFS_support <- function(henv){
   assign("configuration", configuration, henv)
   assign("hdfs", hdfs, henv)
   assign("ioutils", ioutils, henv)
-  
+
   invisible(TRUE)
 }
 
@@ -67,4 +67,33 @@ IOUTILS <- function(henv = hive()){
   if(inherits(ioutils, "error"))
     ioutils <- NULL
   ioutils
+}
+
+## java output cannot be sinked with standard R tools. Thus, as RWeka
+## functions send some strange messages to stdout and err which is
+## suboptimal in an Hadoop session we need to redirect the output.
+redirect_java_output <- function(x = NULL){
+    ## need this when called in streaming jobs (no jvm started)
+    require("rJava")
+    .jinit()
+    if(is.null(x)){
+        bos <- .jnew( "java/io/ByteArrayOutputStream" )
+        out <- .jfield( "java/lang/System", , "out" )
+        .jcall( "java/lang/System", "V", "setOut",
+               .jnew("java/io/PrintStream", .jcast(bos,"java/io/OutputStream")) )
+        err <- .jfield( "java/lang/System", , "err" )
+        .jcall( "java/lang/System", "V", "setErr",
+               .jnew("java/io/PrintStream", .jcast(bos,"java/io/OutputStream")) )
+        out <- list(out = out, err = err)
+    }
+    else {
+        if(is.list(x)){
+            .jcall("java/lang/System", "V", "setOut", out)
+            .jcall("java/lang/System", "V", "setErr", err)
+            ## Display them if wanted.
+            message(.jcall(bos, "Ljava/lang/String;", "toString"))
+        }
+        out <- NULL
+    }
+    invisible(out)
 }

@@ -149,7 +149,7 @@ dc_decode_term <- function(x)
 .generate_TDM_mapper <- function() {
     function(){
         require("tm")
-
+        hive:::redirect_java_output(NULL)
         ## We need to get the control argument list from the
         ## environment variables
         serialized <- Sys.getenv("_HIVE_TERMFREQ_CONTROL_")
@@ -250,8 +250,8 @@ dc_decode_term <- function(x)
         env <- as.list(env)
         env <- lapply(env, tm.plugin.dc:::.collector2, NULL)
         for( term in names(env) )
-          mapred_write_output( term, env[[ term ]] )
-      }
+            mapred_write_output( term, env[[ term ]] )
+    }
 }
 
 ## FIXME: we can do this more efficiently

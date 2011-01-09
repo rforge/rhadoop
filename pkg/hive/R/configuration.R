@@ -78,4 +78,3 @@ hadoop_parse_xml <- function(x, what){
                                                                                  out}})}
   })))
 }
-
