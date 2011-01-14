@@ -142,8 +142,8 @@ DFS_tail <- function(file, n = 6L, size = 1024, henv = hive() ){
     routput <- .jnew("org/rosuda/JRI/RConsoleOutputStream", .jengine(TRUE), as.integer(0))
     ## now we need to capture the contents from the console usingg a text connection
     ## we save the results in the object out
-    #out <- character(0)
-    con <- textConnection("out", open = "w")
+    out <- character(0)
+    con <- textConnection("out", open = "w", local = TRUE)
     sink(file = con)
     ioutils$copyBytes(inputstream, routput, as.integer(1024), TRUE)
     sink()
@@ -221,7 +221,7 @@ DFS_read_lines <- function( file, n = -1L, henv = hive() ) {
         routput <- .jnew("org/rosuda/JRI/RConsoleOutputStream", .jengine(TRUE), as.integer(0))
         ## now we need to capture the contents from the console usingg a text connection
         ## we save the results in the object out
-        con <- textConnection("out", open = "w")
+        con <- textConnection("out", open = "w", local = TRUE)
         sink(file = con)
         ioutils$copyBytes(inputstream, routput, as.integer(1024), TRUE)
         sink()
