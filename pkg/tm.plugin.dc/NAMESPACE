@@ -1,4 +1,5 @@
 import("tm")
+import("slam")
 useDynLib("tm.plugin.dc")
 
 ## Constructor

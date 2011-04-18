@@ -29,13 +29,15 @@ TermDocumentMatrix.DistributedCorpus <- function( x, control = list() ){
     ## then we put the sparse matrix into column major order (via .fix_TDM())
     i <- rep(as.integer(terms), unlist(lapply(results, function(x) length(x[[ 1 ]]))))
     rmo <- order(i)
-    .fix_TDM( tm:::.TermDocumentMatrix(i    = as.integer(i)[rmo],
-                                       j    = unlist(lapply(results, function(x) x[[ 1 ]]))[rmo],
-                                       v    = as.numeric(unlist(lapply(results, function(x) x[[ 2 ]])))[rmo],
-                                       nrow = length(uniq_terms),
-                                       ncol = length(x),
-                                       dimnames = list(Terms = uniq_terms,
-                                                       Docs = rownames(dc_get_text_mapping_from_revision(x)))) )
+    .fix_TDM( tm:::.TermDocumentMatrix(
+                simple_triplet_matrix(i = as.integer(i)[rmo],
+                                      j = unlist(lapply(results, function(x) x[[ 1 ]]))[rmo],
+                                      v = as.numeric(unlist(lapply(results, function(x) x[[ 2 ]])))[rmo],
+                                      nrow = length(uniq_terms),
+                                      ncol = length(x),
+                                      dimnames = list(Terms = uniq_terms,
+                                                      Docs = rownames(dc_get_text_mapping_from_revision(x)))),
+                weighting = tm::weightTf) )
 }
 
 .read_lines_from_reducer_output <- function( storage, rev )
@@ -64,7 +66,7 @@ TermDocumentMatrix.DistributedCorpus <- function( x, control = list() ){
 .local_disk_TDM_mapreducer <- function( control, input, output){
     con  <- file( input, open = "r" )
     con2 <- file( output, open = "w" )
-    out  <- list( tm:::.TermDocumentMatrix() )
+    out  <- list( tm:::.TermDocumentMatrix(simple_triplet_zero_matrix(nrow = 0), weighting=tm::weightTf) )
     env <- new.env( hash = TRUE, size = 10240 )
     while (length(line <- readLines(con, n = 1L, warn = FALSE)) > 0) {
         input <- dc_split_line(line)
@@ -184,36 +186,36 @@ dc_decode_term <- function(x)
 ## Second mapper reduces term vectors per document to TDM per chunk
 ## can be seen as a "combiner" in Hadoop Terminology
 ## FIXME: obsolete?
-.generate_TDM_combiner <- function() {
-    function(){
-        require("tm")
+## .generate_TDM_combiner <- function() {
+##     function(){
+##         require("tm")
 
-        split_line <- tm.plugin.dc:::dc_split_line
-        mapred_write_output <- function(key, value)
-            cat( sprintf("%s\t%s", key,
-                         tm.plugin.dc:::dc_serialize_object(value)), sep ="\n" )
+##         split_line <- tm.plugin.dc:::dc_split_line
+##         mapred_write_output <- function(key, value)
+##             cat( sprintf("%s\t%s", key,
+##                          tm.plugin.dc:::dc_serialize_object(value)), sep ="\n" )
 
-        ## initialize TDM
-        out <- list(tm:::.TermDocumentMatrix())
-        con <- file("stdin", open = "r")
-        while (length(line <- readLines(con, n = 1L, warn = FALSE)) > 0) {
-            input <- split_line(line)
-            out <- c(out,
-                     list(tm:::.TermDocumentMatrix(i = seq_along(input$value),
-                                                   j = rep(1L, length(input$value)),
-                                                   v = as.numeric(input$value),
-                                                   nrow = length(input$value),
-                                                   ncol = 1L,
-                                                   dimnames = list(names(input$value),
-                                                   input$key))))
-        }
-        close(con)
+##         ## initialize TDM
+##         out <- list( tm:::.TermDocumentMatrix(simple_triplet_zero_matrix(nrow = 0), weighting=tm::weightTf) )
+##         con <- file("stdin", open = "r")
+##         while (length(line <- readLines(con, n = 1L, warn = FALSE)) > 0) {
+##             input <- split_line(line)
+##             out <- c(out,
+##                      list(tm:::.TermDocumentMatrix(i = seq_along(input$value),
+##                                                    j = rep(1L, length(input$value)),
+##                                                    v = as.numeric(input$value),
+##                                                    nrow = length(input$value),
+##                                                    ncol = 1L,
+##                                                    dimnames = list(names(input$value),
+##                                                    input$key))))
+##         }
+##         close(con)
 
-    ## key temporarily the name of the last active document
-    ## FIXME: should be replaced by sort of a checksum of the matrix
-        mapred_write_output(input$key, do.call(c, out))
-  }
-}
+##     ## key temporarily the name of the last active document
+##     ## FIXME: should be replaced by sort of a checksum of the matrix
+##         mapred_write_output(input$key, do.call(c, out))
+##   }
+## }
 
 ## using C function for collecting termFreq results (version 4)
 .generate_TDM_reducer <- function() {
