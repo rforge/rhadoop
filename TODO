@@ -1,0 +1,11 @@
+* General note for hadoop under Debian.
+
+it seems that hadoop is not supported by the Debian packaging anymore:
+http://packages.qa.debian.org/h/hadoop/news/20110618T092058Z.html
+
+and
+
+http://lucene.472066.n3.nabble.com/Installing-Hadoop-on-Debian-Squeeze-td2682705.html
+
+* check cloudera debs
+
