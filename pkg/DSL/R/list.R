@@ -39,6 +39,7 @@ as.DistributedList.list <- function(x, DS = NULL, ...){
     position <- 1L
     size <- 0L
     mapping <- DSL_hash( length(x), ids = names(x) )
+    DS_dir_create(storage, "DSL") ## comparable to revision
     outlines <- character( 0L )
 
     ## Loop over list elements and write element per element into tempfile() in DFS
@@ -53,7 +54,9 @@ as.DistributedList.list <- function(x, DS = NULL, ...){
 
         ## write chunk if size greater than pre-defined chunksize5B
         if(object.size(outlines) >= DS_chunksize(storage)){
-            DS_write_lines(storage, outlines, file.path(activeRev, sprintf("part-%d", chunk_iterator)) )
+            chunk <- tempfile(pattern="DSL-", tmpdir = "DSL")
+            chunks <- c( chunks, chunk )
+            DS_write_lines(storage, outlines, chunk )
             outlines <- character(0L)
             position <- 1L
             chunk_iterator <- chunk_iterator + 1
@@ -61,7 +64,6 @@ as.DistributedList.list <- function(x, DS = NULL, ...){
     }
 
     if(length(outlines)){
-        DS_dir_create(storage, "DSL")
         chunk <- tempfile(pattern="DSL-", tmpdir = "DSL")
         chunks <- c( chunks, chunk )
         DS_write_lines(storage, outlines, chunk )

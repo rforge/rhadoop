@@ -26,3 +26,4 @@ o reduce   ...
 Further todo: 
 o think about finalization of DistributedList objects
 o tm.plugin.dc depends on DSL package once transition is finished
+o DistributedStorage<- replacement function not yet implemented properly

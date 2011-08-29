@@ -60,7 +60,7 @@ DS_default <- function(){
                          fetch_last_line = function(x) utils::tail(base::readLines(as.character(x)), n = 1L),
                          list_directory  = base::dir,
                          read_lines      = function(x) base::readLines(as.character(x)),
-                         unlink          = function(x) tm.plugin.dc:::lfs_remove(x),
+                         unlink          = function(x) DSL:::lfs_remove(x),
                          write_lines     = function(text, fil) base::writeLines(text, con = as.character(fil)), ...
                         )
 }
@@ -82,10 +82,10 @@ DS_default <- function(){
 ## DistributedStorage S3 methods
 ################################################################################
 
-is.DistributedStorage <- function( DS )
-    inherits( DS, "DistributedStorage" )
+is.DistributedStorage <- function( x )
+    inherits( x, "DistributedStorage" )
 
-as.DistributedStorage <- function( DS, ... )
+as.DistributedStorage <- function( x )
     UseMethod("as.DistributedStorage")
 
 as.DistributedStorage.DistributedStorage <- identity
@@ -109,12 +109,12 @@ summary.DistributedStorage <- function( object, ... ){
 ## DistributedStorage accessor and replacement functions for class "DistributedCorpus"
 ################################################################################
 
-DistributedStorage <- function( x, ... )
+DistributedStorage <- function( x )
   UseMethod("DistributedStorage")
 
 DistributedStorage.DistributedStorage <- identity
 
-DistributedStorage.DistributedList <- function( x, ... )
+DistributedStorage.DistributedList <- function( x )
   attr(x, "DistributedStorage")
 
 `DistributedStorage<-` <- function( x, value )
@@ -148,7 +148,7 @@ DistributedStorage.DistributedList <- function( x, ... )
 ## FIXME: we need to provide some checksums here
 .check_contents_of_storage <- function(x, value){
     all( attr(x, "Chunks")[[ attr(x, "ActiveRevision") ]] %in%
-        tm.plugin.dc:::DS_list_directory( value, attr(x, "ActiveRevision")) )
+        DS_list_directory( value, attr(x, "ActiveRevision")) )
 }
 
 .DS_empty <- function(){
