@@ -1,0 +1,38 @@
+## Constructor
+##export("DistributedList")
+
+## Generic functions
+export("as.DistributedList")
+
+export("DL_lapply")
+export("DL_gather")
+export("DL_reduce")
+
+## Methods on DistributedList
+S3method("[[", "DistributedList")
+##S3method("[[<-", "DistributedList")
+S3method("length", "DistributedList")
+S3method("print", "DistributedList")
+S3method("summary", "DistributedList")
+
+
+## Methods on Corpus
+S3method("as.DistributedList", "list")
+S3method("as.DistributedList", "DistributedList")
+S3method("as.list", "DistributedList")
+S3method("as.list", "DistributedList")
+
+## Storage backend
+export("dc_storage_create",
+       "dc_storage",
+       "dc_storage<-",
+       "as.dc_storage",
+       "is.dc_storage")
+
+S3method("dc_storage", "DistributedCorpus")
+S3method("dc_storage", "dc_storage")
+S3method("dc_storage<-", "DistributedCorpus")
+S3method("as.dc_storage", "dc_storage")
+
+S3method("print", "dc_storage")
+S3method("summary", "dc_storage")

@@ -1,0 +1,22 @@
+This paper describes the design and implementation of the
+'DistributedList' class.
+
+each element  in a distributed list are serialized to chunk files in a
+pre-defined directory <base_dir> on a
+distributed file system. Typically, this directory is located in /tmp
+or any directory generated using tempdir() or tempfile().
+ 
+
+Methods:
+o length() ... done
+o print()  ... done
+o [[       ... done
+o names()  ... done
+o c()	   ... 
+
+
+Functions:
+
+o lapply
+o gather
+o reduce
