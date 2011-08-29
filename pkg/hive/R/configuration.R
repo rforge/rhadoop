@@ -1,6 +1,6 @@
 ## Getters
 hive_get_parameter <- function(x, henv = hive()){
-    if( hadoop_version(hive()) < "0.20.0" ) {
+    if( hadoop_version(henv) < "0.20.0" ) {
         ## first search in hadoop-site configuration (overrules defaults)
         out <- .hadoop_configuration("hadoop_site", henv)[x]
         ## if not found then return value from default configuration
@@ -8,11 +8,11 @@ hive_get_parameter <- function(x, henv = hive()){
             out <- .hadoop_configuration("hadoop_default", henv)[x]
     } else {
         site <- list()
-        for( i in grep("_site", names(get("config_files", hive()))) )
-            site <- unlist( c( site, get("config_files", hive())[[ i ]]) )
+        for( i in grep("_site", names(get("config_files", henv))) )
+            site <- unlist( c( site, get("config_files", henv)[[ i ]]) )
         default <- list()
-        for( i in grep("_default", names(get("config_files", hive()))) )
-            default <- unlist( c( default, get("config_files", hive())[[ i ]]) )
+        for( i in grep("_default", names(get("config_files", henv))) )
+            default <- unlist( c( default, get("config_files", henv)[[ i ]]) )
         out <- site[x]
         ## if not found then return value from default configuration
         if(is.na(out))

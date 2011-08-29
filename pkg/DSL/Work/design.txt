@@ -12,11 +12,17 @@ o length() ... done
 o print()  ... done
 o [[       ... done
 o names()  ... done
+o summary()...
 o c()	   ... 
+o as.list()... [depends on implementation of gather]
 
 
 Functions:
 
-o lapply
-o gather
-o reduce
+o lapply   ...
+o gather   ...
+o reduce   ...
+
+Further todo: 
+o think about finalization of DistributedList objects
+o tm.plugin.dc depends on DSL package once transition is finished

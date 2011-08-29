@@ -54,10 +54,10 @@ hive_create <- function( hadoop_home ){
       }, hive )
   } else {
       local( {
-          hadoop <- if( tools:::file_test("-x", Sys.which("hadoop")) )
-            Sys.which("hadoop")
+          hadoop <- if( tools:::file_test("-x", file.path(hadoop_home, "bin", "hadoop")) )
+              file.path(hadoop_home, "bin", "hadoop")
           else
-            file.path(hadoop_home, "bin", "hadoop")
+              Sys.which("hadoop")
           version <- hvers
           stopifnot(file.exists(hadoop))
 
