@@ -39,7 +39,8 @@ as.DistributedList.list <- function(x, DS = NULL, ...){
     position <- 1L
     size <- 0L
     mapping <- DSL_hash( length(x), ids = names(x) )
-    DS_dir_create(storage, "DSL") ## comparable to revision
+    DSL_rev <- .make_DSL_revision()
+    DS_dir_create(storage, DSL_rev) ## comparable to revision
     outlines <- character( 0L )
 
     ## Loop over list elements and write element per element into tempfile() in DFS
@@ -54,7 +55,7 @@ as.DistributedList.list <- function(x, DS = NULL, ...){
 
         ## write chunk if size greater than pre-defined chunksize5B
         if(object.size(outlines) >= DS_chunksize(storage)){
-            chunk <- tempfile(pattern="DSL-", tmpdir = "DSL")
+            chunk <- .make_chunk_filename( DSL_rev )
             chunks <- c( chunks, chunk )
             DS_write_lines(storage, outlines, chunk )
             outlines <- character(0L)
@@ -64,7 +65,7 @@ as.DistributedList.list <- function(x, DS = NULL, ...){
     }
 
     if(length(outlines)){
-        chunk <- tempfile(pattern="DSL-", tmpdir = "DSL")
+        chunk <- .make_chunk_filename( DSL_rev )
         chunks <- c( chunks, chunk )
         DS_write_lines(storage, outlines, chunk )
         chunk_iterator <- chunk_iterator + 1
@@ -126,4 +127,8 @@ DSL_serialize_object <- function( x )
 DSL_unserialize_object <- function( x )
     unserialize( charToRaw(gsub("\\\\n", "\n", x)) )
 
-
+.make_DSL_revision <- function(){
+    sprintf("DSL-%s-%s%s", format(Sys.time(), "%Y%m%d-%H%M%S"), sample(0:9, 1), sample(letters, 1))
+}
+.make_chunk_filename <- function( dir )
+    tempfile(pattern="chunk-", tmpdir = dir)

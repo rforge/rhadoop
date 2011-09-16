@@ -12,7 +12,7 @@ o length() ... done
 o print()  ... done
 o [[       ... done
 o names()  ... done
-o summary()...
+o summary()... default method works
 o c()	   ... 
 o as.list()... [depends on implementation of gather]
 

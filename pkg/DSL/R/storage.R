@@ -56,7 +56,7 @@ DS_default <- function(){
     .DistributedStorage( type            = "local_disk",
                          base_directory  = base_dir,
                          chunksize       = chunksize,
-                         dir_create      = base::dir.create,
+                         dir_create      = function(x) base::dir.create(x, showWarnings = FALSE),
                          fetch_last_line = function(x) utils::tail(base::readLines(as.character(x)), n = 1L),
                          list_directory  = base::dir,
                          read_lines      = function(x) base::readLines(as.character(x)),
