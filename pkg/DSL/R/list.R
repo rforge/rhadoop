@@ -71,8 +71,23 @@ as.DistributedList.list <- function(x, DS = NULL, ...){
         chunk_iterator <- chunk_iterator + 1
     }
 
+    ## Finalizer
+    e <- new.env()
+    assign( "base_dir", DS_base_dir(storage), envir = e )
+    assign( "FUN", storage$unlink, envir = e )
+    assign( "Revisions", DSL_rev, envir = e )
+    assign(DSL_rev, chunks, envir = e)
+
+    reg.finalizer( e, function(x){
+        revisions <- get("Revisions", envir = x)
+        base_dir <- get("base_dir", envir = x)
+        for(rev in revisions){
+            lapply(get(rev, envir = x), function(f) get("FUN", envir = x)(file.path(base_dir, f)))
+            get("FUN", envir = x)(file.path(base_dir, rev))
+        }
+    } )
     .DistributedList( x = list(),
-                      chunks = chunks,
+                      chunks = e,
                       keys = seq_len(length(x)),
                       mapping = mapping,
                       storage = storage )
@@ -80,7 +95,7 @@ as.DistributedList.list <- function(x, DS = NULL, ...){
 
 .DistributedList <- function( x,  chunks, keys,
                                 mapping, storage ) {
-  attr( x, "Chunks" )             <- chunks
+  attr( x, "Chunks" )             <- as.environment(chunks)
   attr( x, "Keys" )               <- keys
   attr( x, "Mapping" )            <- mapping
   attr( x, "DistributedStorage" ) <- storage
@@ -104,10 +119,12 @@ names.DistributedList <- function(x)
   rownames(attr(x, "Mapping"))
 
 `[[.DistributedList` <- function( x, i ) {
-    ## TODO: what if there are more than 1 chunk
+    ## TODO: what if there is more than 1 chunk
     mapping <- attr(x, "Mapping")[ i, ]
+    ## when using accessor we always use first
     line <- DS_read_lines( DistributedStorage(x),
-                           attr(x, "Chunks")[ mapping["Chunk"] ]
+                           get( get("Revisions", envir = attr(x, "Chunks"))[1],
+                                envir = attr(x, "Chunks"))[ mapping["Chunk"] ]
                            ) [ mapping["Position"] ]
     DSL_unserialize_object( strsplit( line, "\t" )[[ 1 ]][ 2 ] )
 }
