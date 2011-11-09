@@ -71,7 +71,10 @@ hive_create <- function( hadoop_home ){
                                 masters = suppressWarnings(tryCatch(readLines(file.path(hadoop_home, "conf", "masters")), error = function(x) NA)))
 
 
-          hadoop_jars <- file.path("/usr/share/java/", c("hadoop-core.jar", "commons-logging.jar"))
+          ## Debian packages not available anymore, thus using CDH paths
+          ## hadoop_jars <- file.path("/usr/share/java/", c("hadoop-core.jar", "commons-logging.jar"))
+          hadoop_jars <- file.path("/usr/lib/hadoop", c("hadoop-core.jar", "lib/commons-logging-1.0.4.jar"))
+
           if( !all(file.exists(hadoop_jars)) )
             hadoop_jars <- file.path(hadoop_home, c(sprintf("hadoop-%s-core.jar", version),  file.path("lib", "commons-logging-1.0.4.jar")))
 
