@@ -11,19 +11,48 @@ Methods:
 o length() ... done
 o print()  ... done
 o [[       ... done
+o `[[<-`   ...
 o names()  ... done
+o `names<-`... done
 o summary()... default method works
 o c()	   ... 
-o as.list()... [depends on implementation of gather]
+o as.list()... done
 
 
 Functions:
 
-o lapply   ...
-o gather   ...
-o reduce   ...
+o map/lapply...
+  from Wikipedia
+  (http://en.wikipedia.org/wiki/Map_%28higher-order_function%29):
+  "map is the name of a higher-order function that applies a given
+  function to each element of a list, returning a list of
+  results. They are examples of both catamorphisms and
+  anamorphisms. This is often called apply-to-all when considered a
+  functional form."
+  lapply() on DistributedStorageLists will automagically return a
+  "list" containing the results of the lapply since it calls as.list().
+
+o gather    ... done
+  DSL_gather is similar to an MPI_GATHER
+  (http://www.mpi-forum.org/docs/mpi22-report/node95.htm#Node95) where
+  "[...] each process (root process included) sends the contents of
+  its send buffer to the root process. The root process receives the
+  messages and stores them in rank order. The outcome is as if each of
+  the n processes in the group (including the root process) had
+  executed a call to MPI_SEND [...] and the root had executed n calls
+  to  MPI_RECV [...]."
+
+o reduce    ...
+  MPI_REDUCE
+  (http://www.mpi-forum.org/docs/mpi22-report/node103.htm#Node103)
+  reduce (fold) in functional programming:
+  http://en.wikipedia.org/wiki/Fold_%28higher-order_function%29
+
 
 Further todo: 
-o think about finalization of DistributedList objects
 o tm.plugin.dc depends on DSL package once transition is finished
 o DistributedStorage<- replacement function not yet implemented properly
+
+Finished:
+o think about finalization of DistributedList objects
+

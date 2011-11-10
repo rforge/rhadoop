@@ -5,7 +5,7 @@ export("DistributedList")
 export("as.DistributedList")
 
 #export("DSL_lapply")
-#export("DSL_gather")
+export("DSL_gather")
 #export("DSL_reduce")
 
 ## Methods on DistributedList
@@ -13,6 +13,7 @@ S3method("[[", "DistributedList")
 ##S3method("[[<-", "DistributedList")
 S3method("length", "DistributedList")
 S3method("names", "DistributedList")
+S3method("names<-", "DistributedList")
 S3method("print", "DistributedList")
 ##S3method("summary", "DistributedList")
 
@@ -20,7 +21,7 @@ S3method("print", "DistributedList")
 ## Methods on Corpus
 S3method("as.DistributedList", "list")
 S3method("as.DistributedList", "DistributedList")
-##S3method("as.list", "DistributedList")
+S3method("as.list", "DistributedList")
 
 
 ## Storage backend

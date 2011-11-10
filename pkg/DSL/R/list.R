@@ -118,6 +118,11 @@ length.DistributedList <- function(x)
 names.DistributedList <- function(x)
   rownames(attr(x, "Mapping"))
 
+`names<-.DistributedList` <- function(x, value){
+    rownames(attr(x, "Mapping")) <- value
+    x
+}
+
 `[[.DistributedList` <- function( x, i ) {
     ## TODO: what if there is more than 1 chunk
     mapping <- attr(x, "Mapping")[ i, ]
