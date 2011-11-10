@@ -41,12 +41,12 @@ hive_create <- function( hadoop_home ){
     stop( sprintf("There is no directory '%s'.", hadoop_home) )
   hive <- new.env()
   hvers <- hadoop_get_version( hadoop_home )
-  streaming_home <- c( file.path(hadoop_home, "/contrib/streaming"),
+  streaming_home <- c( file.path(hadoop_home, "contrib/streaming"),
                        file.path("/usr/lib/hadoop/contrib/streaming") )
 
-  jar <- lapply(lapply(streaming_home, dir), function(x) grep(sprintf("hadoop-streaming-%s.jar", hvers), x, value = TRUE))
+  jar <- lapply(lapply(streaming_home, dir), function(x) grep("[hadoop,streaming,jar]", x, value = TRUE))
   ind <- unlist(lapply(jar, function(x) length(x) > 0))
-  hadoop_streaming <- file.path(streaming_home[ind][1], jar[ind][1])
+  hadoop_streaming <- file.path(streaming_home[ind][1], unlist(jar[ind])[1])
   ## config files are split and located in different places since version 0.20.0
   if( hvers < "0.20.0" ){
       local( {
