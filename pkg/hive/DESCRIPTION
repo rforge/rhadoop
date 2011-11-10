@@ -13,4 +13,4 @@ Imports: rJava (>= 0.8-8), tools, XML
 Depends: R (>= 2.9.0)
 Suggests: rJava (>= 0.8-8)
 Enhances: HadoopStreaming
-SystemRequirements: Hadoop core >= 0.19.1 (http://hadoop.apache.org/core/) or CDH3 (http://www.cloudera.com)
+SystemRequirements: Hadoop core >= 0.19.1 (http://hadoop.apache.org/core/) or CDH3 (http://www.cloudera.com); standard unix tools (e.g., chmod)

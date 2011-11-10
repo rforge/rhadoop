@@ -35,9 +35,10 @@ DFS_put_object( obj, file, henv = hive() )
 DFS_write_lines( text, file, henv = hive() )
 }
 \arguments{
-  \item{henv}{Hadoop local environment.}
+  \item{henv}{An object containing the local Hadoop configuration.}
   \item{file}{a character string representing a file on the DFS.}
-  \item{files}{a character string representing files to be copied to the
+  \item{files}{a character string representing files located on the
+    local file system to be copied to the
     DFS.}
   \item{n}{an integer specifying the number of lines to read.}
   \item{obj}{an R object to be serialized to/from the DFS.}
@@ -60,8 +61,8 @@ DFS_write_lines( text, file, henv = hive() )
   distributed storage. 
   
   \code{DFS_cat} is useful for producing output in user-defined
-  functions. It reads from files in the DFS and typically prints the
-  output to the standard output. It's behaviour is similar to the base
+  functions. It reads from files on the DFS and typically prints the
+  output to the standard output. Its behaviour is similar to the base
   function \code{cat}.
 
   \code{DFS_dir_create} creates directories with the given path names if
@@ -101,17 +102,27 @@ DFS_write_lines( text, file, henv = hive() )
 
 }
 \value{
-  \code{DFS_dir_create} returns a logical value indicating if the 
+  \code{DFS_delete()}, \code{DFS_dir_create()}, and \code{DFS_dir_remove} return a logical value indicating if the 
   operation succeeded for the given argument.
 
-  \code{DFS_dir_exists} and \code{DFS_file_exists} return \code{TRUE} if
+  \code{DFS_dir_exists()} and \code{DFS_file_exists()} return \code{TRUE} if
   the named directories or files exist in the HDFS.
 
+  \code{DFS_get__object()} returns the deserialized object stored in a
+  file on the HDFS.
+  
+  \code{DFS_list()} returns a character vector representing the directory listing of the corresponding
+  path on the HDFS.
+
+  \code{DFS_read_lines()} returns a character vector of length the
+  number of lines read.
+  
+  \code{DFS_tail()} returns a character vector of length the number of
+  lines to read until the end of a file on the HDFS.
   
 }
 \references{
-  Apache Hadoop core
-  (\url{http://hadoop.apache.org/core/}).  
+  The Hadoop Distributed File System (\url{http://hadoop.apache.org/hdfs/}).  
 }
 
 \author{Stefan Theussl}
@@ -123,11 +134,25 @@ DFS_write_lines( text, file, henv = hive() )
 %  \pkg{HadoopStreaming}
 %}
 \examples{
-## Do we have access to the root tree of the DFS?
+## Do we have access to the root directory of the DFS?
 \dontrun{DFS_dir_exists("/")}
-
-## If so, list the contents.
-\dontrun{DFS_list("/")}
-
+## Some self-explanatory DFS interaction
+\dontrun{
+DFS_list( "/" )
+DFS_dir_create( "/tmp/test" )
+DFS_write_lines( c("Hello HDFS", "Bye Bye HDFS"), "/tmp/test/hdfs.txt" )
+DFS_list( "/tmp/test" )
+DFS_read_lines( "/tmp/test/hdfs.txt" )
+}
+## Serialize an R object to the HDFS
+\dontrun{
+foo <- function()
+"You got me serialized."
+sro <- "/tmp/test/foo.sro"
+DFS_put_object(foo, sro)
+DFS_get_object( sro )()
+}
+## finally (recursively) remove the created directory
+\dontrun{DFS_dir_remove( "/tmp/test" )}
 }
 %%\keyword{hpc}

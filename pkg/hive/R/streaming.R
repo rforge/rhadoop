@@ -57,8 +57,8 @@ hive_stream <- function( mapper, reducer, input, output, henv = hive(),
     cmdenv_arg <- ""
   else
     cmdenv_arg <- sprintf( "-cmdenv '%s'", paste(as.character(cmdenv_arg), collapse = " ") )
-  out <- system(sprintf('%s jar %s/contrib/streaming/hadoop-*-streaming.jar -D %s -input %s -output %s %s %s %s %s',
-                 hadoop(henv), hadoop_home(henv), streaming_args, input, output,
+  out <- system(sprintf('%s jar %s -D %s -input %s -output %s %s %s %s %s',
+                 hadoop(henv), hadoop_streaming(henv), streaming_args, input, output,
                  mapper_arg, reducer_arg, files, cmdenv_arg),
          intern = TRUE)
   out

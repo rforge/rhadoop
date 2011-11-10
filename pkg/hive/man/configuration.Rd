@@ -5,7 +5,7 @@
 \alias{hive_get_nreducer}
 \alias{hive_set_nreducer}
 
-\title{Hadoop configuration}
+\title{Managing the Hadoop configuration}
 \description{
   
   Functions for showing/changing Hadoop configuration.
@@ -19,10 +19,10 @@ hive_get_nreducer( henv = hive() )
 hive_set_nreducer( n, henv = hive() )
 }
 \arguments{
-  \item{henv}{Hadoop local environment.}
-  \item{x}{a character string naming the parameter in the Hadoop
+  \item{henv}{An object containing the local Hadoop configuration.}
+  \item{x}{A character string naming the parameter in the Hadoop
     configuration.}
-  \item{n}{an integer specifying the number of reducers to be used in
+  \item{n}{An integer specifying the number of reducers to be used in
     \code{hive_stream()}.}
 }
 \details{
@@ -50,8 +50,8 @@ hive_set_nreducer( n, henv = hive() )
   of configured reducers.
 }
 \references{
-  Apache Hadoop core
-  (\url{http://hadoop.apache.org/core/}).  
+  Apache Hadoop cluster configuration
+  (\url{http://hadoop.apache.org/common/docs/current/cluster_setup.html#Configuration+Files}).  
 }
 \author{Stefan Theussl}
 %\seealso{

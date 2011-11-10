@@ -41,6 +41,12 @@ hive_create <- function( hadoop_home ){
     stop( sprintf("There is no directory '%s'.", hadoop_home) )
   hive <- new.env()
   hvers <- hadoop_get_version( hadoop_home )
+  streaming_home <- c( file.path(hadoop_home, "/contrib/streaming"),
+                       file.path("/usr/lib/hadoop/contrib/streaming") )
+
+  jar <- lapply(lapply(streaming_home, dir), function(x) grep(sprintf("hadoop-streaming-%s.jar", hvers), x, value = TRUE))
+  ind <- unlist(lapply(jar, function(x) length(x) > 0))
+  hadoop_streaming <- file.path(streaming_home[ind][1], jar[ind][1])
   ## config files are split and located in different places since version 0.20.0
   if( hvers < "0.20.0" ){
       local( {
@@ -53,6 +59,13 @@ hive_create <- function( hadoop_home ){
                                 masters = readLines(file.path(hadoop_home, "conf", "masters")))
       }, hive )
   } else {
+      if( file.exists( file.path(hadoop_home, "src/core" )) ){
+          hadoop_src <- file.path(hadoop_home, "src" )
+      } else if( file.exists( file.path("/usr/src/hadoop-0.20", "core" )) ){
+          hadoop_src <- "/usr/src/hadoop-0.20"
+      } else {
+          hadoop_src <- system.file("defaults", package = "hive")
+      }
       local( {
           hadoop <- if( tools:::file_test("-x", file.path(hadoop_home, "bin", "hadoop")) )
               file.path(hadoop_home, "bin", "hadoop")
@@ -61,11 +74,11 @@ hive_create <- function( hadoop_home ){
           version <- hvers
           stopifnot(file.exists(hadoop))
 
-          config_files <- list(core_default = get_hadoop_config("core-default.xml", file.path(hadoop_home, "src/core")),
+          config_files <- list(core_default = get_hadoop_config("core-default.xml", file.path(hadoop_src, "core")),
                                 core_site = get_hadoop_config("core-site.xml", file.path(hadoop_home, "conf")),
-                                hdfs_default = get_hadoop_config("hdfs-default.xml", file.path(hadoop_home, "src/hdfs")),
+                                hdfs_default = get_hadoop_config("hdfs-default.xml", file.path(hadoop_src, "hdfs")),
                                 hdfs_site = get_hadoop_config("hdfs-site.xml", file.path(hadoop_home, "conf")),
-                                mapred_default = get_hadoop_config("mapred-default.xml", file.path(hadoop_home, "src/mapred")),
+                                mapred_default = get_hadoop_config("mapred-default.xml", file.path(hadoop_src, "mapred")),
                                 mapred_site = get_hadoop_config("mapred-site.xml", file.path(hadoop_home, "conf")),
                                 slaves = suppressWarnings(tryCatch(readLines(file.path(hadoop_home, "conf", "slaves")), error = function(x) NA)),
                                 masters = suppressWarnings(tryCatch(readLines(file.path(hadoop_home, "conf", "masters")), error = function(x) NA)))
@@ -176,6 +189,9 @@ hadoop <- function( henv )
 
 hadoop_home <- function( henv )
   get( "hadoop_home", henv )
+
+hadoop_streaming <- function( henv )
+  get( "hadoop_streaming", henv )
 
 hadoop_version <- function( henv )
   get( "version", henv )

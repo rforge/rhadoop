@@ -14,41 +14,54 @@
 \usage{
 hive( new )
 .hinit( hadoop_home )
-hive_create( hadoop_home )
 hive_start( henv = hive() )
 hive_stop( henv = hive() )
 hive_is_available( henv = hive() )
 
 }
 \arguments{
-  \item{hadoop_home}{a character string pointing to the local Hadoop installation.}
-  \item{henv}{Hadoop local environment.}
-  \item{new}{Object specifying the Hadoop environment.}
+  \item{hadoop_home}{A character string pointing to the local Hadoop
+    installation. If not given, then \code{.hinit()} will search the
+    default installation directory (given via the environment variable
+    \code{HADOOP_HOME}, or \file{/etc/hadoop}, respectively).}
+  \item{henv}{An object containing the local Hadoop configuration.}
+  \item{new}{An object specifying the Hadoop environment.}
 }
 \details{
   High-level functions to control Hadoop framework.
 
-  The function \code{hive} is used to get/set the Hadoop cluster
-  object.
+  The function \code{hive()} is used to get/set the Hadoop cluster
+  object. This object consists of an environment holding information
+  about the Hadoop cluster.
 
-  The function \code{.hinit} is used to initialize a Hadoop cluster.
+  The function \code{.hinit()} is used to initialize a Hadoop cluster. It
+  retrieves most configuration options via searching the
+  \code{HADOOP_HOME} directory given as an environment variable, or,
+  alternatively, by searching the \code{/etc/hadoop} directory in case
+  the \url{http://www.cloudera.com} distribution (i.e., CDH3) is used.
 
-  The function \code{hive_create} creates a new Hadoop cluster object.
+  The functions \code{hive_start()} and \code{hive_stop()} are used to
+  start/stop the Hadoop framework. The latter is not applicable for
+  system-wide installations like CDH3.
 
-  The functions \code{hive_start} and \code{hive_stop} are used to
-  start/stop the Hadoop framework.
-
-  The function \code{hive_is_available()} is used to check Hadoop cluster
-  status.
+  The function \code{hive_is_available()} is used to check the status of
+  a Hadoop cluster.
 
 }
 \value{
+  \code{hive()} returns an object of class \code{"hive"} representing
+  the currently used cluster configuration.
+
   \code{hive_is_available()} returns \code{TRUE} if the given Hadoop
   framework is running.
+  
 }
 \references{
-  Apache Hadoop core
-  (\url{http://hadoop.apache.org/core/}).  
+  Apache Hadoop core: \url{http://hadoop.apache.org/core/}.
+  
+  Cloudera's distribution including Apache Hadoop (CDH):
+  \url{http://www.cloudera.com/}.
+  
 }
 
 \author{Stefan Theussl}
@@ -57,10 +70,16 @@ hive_is_available( henv = hive() )
 %  \pkg{HadoopStreaming}
 %}
 \examples{
+## read configuration and initialize a Hadoop cluster:
+\dontrun{h <- .hinit( "/etc/hadoop" )}
+\dontrun{hive( h )}
 ## Start hadoop cluster:
-## hive_start()
+\dontrun{hive_start()}
+## check the status of an Hadoop cluste:
+\dontrun{hive_is_available()}
+## return cluster configuration 'h':
+hive()
 ## Stop hadoop cluster:
-## hive_stop()
-
+\dontrun{hive_stop()}
 }
-%\keyword{hpc}
+%%\keyword{HPC,}

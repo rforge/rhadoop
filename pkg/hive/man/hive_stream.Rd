@@ -1,10 +1,10 @@
 \name{hive_stream}
 \alias{hive_stream}
 
-\title{Hadoop Streaming with hive}
+\title{Hadoop Streaming with package \pkg{hive}}
 \description{
   
-  High-level functions for using Hadoop Streaming.
+  High-level R function for using Hadoop Streaming.
   
 }
 \usage{
@@ -29,8 +29,8 @@ hive_stream( mapper, reducer, input, output, henv = hive(),
 }
 \details{
 
-  The function \code{hive_stream} starts a MapReduce job on the given
-  data located in the DFS.
+  The function \code{hive_stream()} starts a MapReduce job on the given
+  data located on the HDFS.
 
 }
 %\value{
@@ -38,8 +38,8 @@ hive_stream( mapper, reducer, input, output, henv = hive(),
 %  framework is running.
 %}
 \references{
-  Apache Hadoop core
-  (\url{http://hadoop.apache.org/core/}).
+  Apache Hadoop Streaming
+  (\url{http://hadoop.apache.org/common/docs/current/streaming.html}).
 }
 
 \author{Stefan Theussl}
@@ -47,10 +47,47 @@ hive_stream( mapper, reducer, input, output, henv = hive(),
 %  \pkg{RHIPE}
 %  \pkg{HadoopStreaming}
 %}
-%\examples{
-%## Start hadoop cluster:
-%## hive_start()
-%## Stop hadoop cluster:
-%## hive_stop()
-%}
+\examples{
+## A simple word count example
+
+## Put some xml files on the HDFS:
+\dontrun{DFS_put(system.file("defaults/core/", package = "hive"), "/tmp/input")}
+\dontrun{DFS_put(system.file("defaults/hdfs/hdfs-default.xml", package = "hive"), "/tmp/input")}
+\dontrun{DFS_put(system.file("defaults/mapred/mapred-default.xml", package = "hive"), "/tmp/input")}
+## Define the mapper and reducer function to be applied:
+## Note that a Hadoop map or reduce job retrieves data line by line from stdin.
+\dontrun{
+mapper <- function(x){
+    con <- file( "stdin", open = "r" )
+    while (length(line <- readLines(con, n = 1L, warn = FALSE)) > 0) {
+        terms <- unlist(strsplit(line, " "))
+        terms <- terms[nchar(terms) > 1 ]
+        if( length(terms) )
+            cat( paste(terms, 1, sep = "\t"), sep = "\n")
+    }
+}
+reducer <- function(x){
+    env <- new.env( hash = TRUE )
+    con <- file( "stdin", open = "r" )
+    while (length(line <- readLines(con, n = 1L, warn = FALSE)) > 0) {
+        keyvalue <- unlist( strsplit(line, "\t") )
+        if( exists(keyvalue[1], envir = env, inherits = FALSE) ){
+            assign( keyvalue[1], get(keyvalue[1], envir = env) +
+as.integer(keyvalue[2]), envir = env )
+        } else
+            assign( keyvalue[1], as.integer(keyvalue[2]), envir = env )
+    }
+    env <- as.list(env)
+    for( term in names(env) )
+        cat( sprintf("%s\t%s", term, env[[term]]), sep ="\n" )
+}
+hive_set_nreducer(1)
+hive_stream( mapper = mapper, reducer = reducer, input = "/tmp/input", output = "/tmp/output" )
+DFS_list("/tmp/output")
+head( DFS_read_lines("/tmp/output/part-00000") )
+}
+## Don't forget to clean file system
+\dontrun{DFS_dir_remove("/tmp/input")}
+\dontrun{DFS_dir_remove("/tmp/output")}
+}
 %\keyword{hpc}
