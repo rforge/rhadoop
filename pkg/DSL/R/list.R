@@ -1,26 +1,25 @@
-## This file defines the DistributedList class and
+## This file defines the DList class and
 ## includes all methods operating on such classes
 ################################################################################
 
 ################################################################################
-## DistributedList (DL) high level constructor
+## DList (DL) high level constructor
 ################################################################################
 
-## FIXME: handle special case where DS is not a storage type object
-DistributedList <- function( ... ){
-    as.DistributedList( list(...), DS = NULL )
+## FIXME: handle special case where DStorage is not a storage type object
+DList <- function( ... ){
+    as.DList( list(...), DStorage = NULL )
 }
 
-as.DistributedList <- function(x, DS = NULL, ...){
-  UseMethod("as.DistributedList")
+as.DList <- function(x, DStorage = NULL, ...){
+    UseMethod("as.DList")
 }
 
-as.DistributedList.DistributedList <- function(x, DS = NULL, ...){
-  identity(x)
-}
+as.DList.DList <- function(x, DStorage = NULL, ...)
+    x
 
-as.DistributedList.list <- function(x, DS = NULL, ...){
-    if( is.null(DS) )
+as.DList.list <- function(x, DStorage = NULL, ...){
+    if( is.null(DStorage) )
         storage <- DS_default()
 
     ## dont think we need active revision here, we write directly into base_dir
@@ -39,10 +38,10 @@ as.DistributedList.list <- function(x, DS = NULL, ...){
     position <- 1L
     size <- 0L
     mapping <- DSL_hash( length(x), ids = names(x) )
-    DSL_rev <- .make_DSL_revision()
-    DS_dir_create(storage, DSL_rev) ## comparable to revision
+    rev <- .make_DSL_revision()
+    DS_dir_create( storage, rev ) ## comparable to revision
     outlines <- character( 0L )
-
+    firstkey <- 1L
     ## Loop over list elements and write element per element into tempfile() in DFS
     for(i in 1L:length(x) ){
         ## construct key/value pairs
@@ -55,29 +54,49 @@ as.DistributedList.list <- function(x, DS = NULL, ...){
 
         ## write chunk if size greater than pre-defined chunksize5B
         if(object.size(outlines) >= DS_chunksize(storage)){
-            chunk <- .make_chunk_filename( DSL_rev )
+            outlines <- c( outlines, .make_chunk_signature(firstkey, i) )
+            chunk <- .make_chunk_filename( rev )
             chunks <- c( chunks, chunk )
             DS_write_lines(storage, outlines, chunk )
             outlines <- character(0L)
+            firstkey <- i + 1
             position <- 1L
             chunk_iterator <- chunk_iterator + 1
         }
     }
-
+    ## write remaining elements to final chunk
     if(length(outlines)){
-        chunk <- .make_chunk_filename( DSL_rev )
+        outlines <- c( outlines, .make_chunk_signature(firstkey, i) )
+        chunk <- .make_chunk_filename( rev )
         chunks <- c( chunks, chunk )
         DS_write_lines(storage, outlines, chunk )
         chunk_iterator <- chunk_iterator + 1
     }
 
-    ## Finalizer
+    .DList( x = list(),
+                      chunks = .make_chunk_handler(chunks, rev, storage),
+                      keys = seq_len(length(x)),
+                      mapping = mapping,
+                      storage = storage )
+}
+
+.DList <- function( x,  chunks, keys,
+                                mapping, storage ) {
+  attr( x, "Chunks" )             <- as.environment(chunks)
+  attr( x, "Keys" )               <- keys
+  attr( x, "Mapping" )            <- mapping
+  attr( x, "DStorage" ) <- storage
+  class( x )                      <- c( "DList", class(x) )
+  x
+}
+
+.make_chunk_handler <- function(chunks, rev, storage){
     e <- new.env()
     assign( "base_dir", DS_base_dir(storage), envir = e )
     assign( "FUN", storage$unlink, envir = e )
-    assign( "Revisions", DSL_rev, envir = e )
-    assign(DSL_rev, chunks, envir = e)
-
+    assign( "Revisions", rev, envir = e )
+    assign(rev, chunks, envir = e)
+    ## Finalizer
     reg.finalizer( e, function(x){
         revisions <- get("Revisions", envir = x)
         base_dir <- get("base_dir", envir = x)
@@ -86,48 +105,34 @@ as.DistributedList.list <- function(x, DS = NULL, ...){
             get("FUN", envir = x)(file.path(base_dir, rev))
         }
     } )
-    .DistributedList( x = list(),
-                      chunks = e,
-                      keys = seq_len(length(x)),
-                      mapping = mapping,
-                      storage = storage )
-}
-
-.DistributedList <- function( x,  chunks, keys,
-                                mapping, storage ) {
-  attr( x, "Chunks" )             <- as.environment(chunks)
-  attr( x, "Keys" )               <- keys
-  attr( x, "Mapping" )            <- mapping
-  attr( x, "DistributedStorage" ) <- storage
-  class( x )                      <- c( "DistributedList", class(x) )
-  x
+    e
 }
 
 ## S3 Methods
-print.DistributedList <- function(x, ...) {
+print.DList <- function(x, ...) {
     cat(sprintf(ngettext(length(x),
-                         "A DistributedStorageList with %d element\n",
-                         "A DistributedStorageList with %d elements\n"),
+                         "A DList with %d element\n",
+                         "A DList with %d elements\n"),
                 length(x)))
     invisible(x)
 }
 
-length.DistributedList <- function(x)
+length.DList <- function(x)
   length(Keys(x))
 
-names.DistributedList <- function(x)
+names.DList <- function(x)
   rownames(attr(x, "Mapping"))
 
-`names<-.DistributedList` <- function(x, value){
+`names<-.DList` <- function(x, value){
     rownames(attr(x, "Mapping")) <- value
     x
 }
 
-`[[.DistributedList` <- function( x, i ) {
+`[[.DList` <- function( x, i ) {
     ## TODO: what if there is more than 1 chunk
     mapping <- attr(x, "Mapping")[ i, ]
     ## when using accessor we always use first
-    line <- DS_read_lines( DistributedStorage(x),
+    line <- DS_read_lines( DStorage(x),
                            get( get("Revisions", envir = attr(x, "Chunks"))[1],
                                 envir = attr(x, "Chunks"))[ mapping["Chunk"] ]
                            ) [ mapping["Position"] ]
@@ -143,14 +148,26 @@ DSL_hash <- function( n, ids = NULL )
     matrix(0L, nrow = n, ncol = 2L, dimnames = list(if(is.null(ids)){
         character(n) } else { ids }, c("Chunk", "Position")))
 
+## Serialization
+
 DSL_serialize_object <- function( x )
   gsub("\n", "\\\\n", gsub("\\n", "\\\n", rawToChar(serialize(x, NULL, TRUE)), fixed = TRUE))
 
 DSL_unserialize_object <- function( x )
     unserialize( charToRaw(gsub("\\\\n", "\n", x)) )
 
+## Revision names
 .make_DSL_revision <- function(){
     sprintf("DSL-%s-%s%s", format(Sys.time(), "%Y%m%d-%H%M%S"), sample(0:9, 1), sample(letters, 1))
 }
+
+## chunk file names
 .make_chunk_filename <- function( dir )
     tempfile(pattern="chunk-", tmpdir = dir)
+
+## reads line (e.g. taken from standard input) and returns
+## the key and the deserialized object
+DSL_split_line <- function( line ) {
+    val <- unlist(strsplit(line, "\t"))
+    list( key = val[1], value = DSL_unserialize_object(val[2]) )
+}

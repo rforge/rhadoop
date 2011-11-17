@@ -1,22 +1,23 @@
+################################################################################
+## DStorage: the distributed storage class
 ## All functions dealing with the storage implementation
-## of the DistributedCorpus are provided here.
-## Each storage is of general class 'dc_storage' and of a subclass defining
-## the actual storage, e.g. 'local_disk', 'HDFS'
+## of the DList class are provided here.
+## Each storage is of general class 'DStorage' and of a subclass defining
+## the actual storage, e.g. 'LFS', 'HDFS'
 ################################################################################
 
 
-
 ################################################################################
-## DistributedStorage (DS) high level constructor
+## DStorage (DS) high level constructor
 ################################################################################
 
-NewDistributedStorage <- function( type = c("local_disk", "HDFS"),
-                                   base_dir,
-                                   chunksize = 1024^2 ){
-    type <- match.arg(type)
+DStorage_create <- function( type = c("LFS", "HDFS"),
+                             base_dir,
+                             chunksize = 1024^2 ){
+    type <- match.arg( type )
     .DS_init( switch(type,
-            "local_disk" = .make_local_disk_storage(base_dir, chunksize),
-            "HDFS"       = .make_HDFS_storage      (base_dir, chunksize)) )
+                     "LFS"  = .make_LFS_storage(base_dir, chunksize),
+                     "HDFS" = .make_HDFS_storage(base_dir, chunksize)) )
 }
 
 ################################################################################
@@ -24,15 +25,15 @@ NewDistributedStorage <- function( type = c("local_disk", "HDFS"),
 ################################################################################
 
 DS_default <- function(){
-    .DS_init( .make_local_disk_storage(base_dir  = tempdir(),
-                                       chunksize = 10 * 1024^2) )
+    .DS_init( .make_LFS_storage(base_dir  = tempdir(),
+                                chunksize = 10 * 1024^2) )
 }
 
 ################################################################################
 ## DS_storage low level constructor
 ################################################################################
 
-.DistributedStorage <- function( type,
+.DStorage <- function( type,
                                  base_directory,
                                  chunksize,
                                  dir_create,
@@ -49,55 +50,55 @@ DS_default <- function(){
                     read_lines = read_lines,
                     unlink = unlink,
                     write_lines = write_lines),
-              class = c(type, "DistributedStorage"))
+              class = c(type, "DStorage"))
 }
 
-.make_local_disk_storage <- function( base_dir, chunksize, ... ){
-    .DistributedStorage( type            = "local_disk",
-                         base_directory  = base_dir,
-                         chunksize       = chunksize,
-                         dir_create      = function(x) base::dir.create(x, showWarnings = FALSE),
-                         fetch_last_line = function(x) utils::tail(base::readLines(as.character(x)), n = 1L),
-                         list_directory  = base::dir,
-                         read_lines      = function(x) base::readLines(as.character(x)),
-                         unlink          = function(x) DSL:::lfs_remove(x),
-                         write_lines     = function(text, fil) base::writeLines(text, con = as.character(fil)), ...
-                        )
+.make_LFS_storage <- function( base_dir, chunksize, ... ){
+    .DStorage( type = "LFS",
+               base_directory  = base_dir,
+               chunksize       = chunksize,
+               dir_create      = function(x) base::dir.create(x, showWarnings = FALSE),
+               fetch_last_line = function(x) utils::tail(base::readLines(as.character(x)), n = 1L),
+               list_directory  = base::dir,
+               read_lines      = function(x) base::readLines(as.character(x)),
+               unlink          = function(x) DSL:::LFS_remove(x),
+               write_lines     = function(text, fil) base::writeLines(text, con = as.character(fil)), ...
+              )
 }
 
 .make_HDFS_storage <- function( base_dir, chunksize, ... ){
-    .DistributedStorage( type = "HDFS",
-                         base_directory  = base_dir,
-                         chunksize       = chunksize,
-                         dir_create      = function(x) hive::DFS_dir_create(x, henv = hive()),
-                         fetch_last_line = function(x) hive::DFS_tail(n = 1L, as.character(x), henv = hive()),
-                         list_directory  = function(x) hive::DFS_list(x, henv = hive()),
-                         read_lines      = function(x) hive::DFS_read_lines(as.character(x), henv = hive()),
-                         unlink          = function(x) hive::DFS_delete(x, recursive = TRUE, henv = hive()),
-                         write_lines     = function(text, fil) hive::DFS_write_lines(text, as.character(fil), henv = hive()), ...
-                        )
+    .DStorage( type = "HDFS",
+               base_directory  = base_dir,
+               chunksize       = chunksize,
+              dir_create      = function(x) hive::DFS_dir_create(x, henv = hive()),
+               fetch_last_line = function(x) hive::DFS_tail(n = 1L, as.character(x), henv = hive()),
+               list_directory  = function(x) hive::DFS_list(x, henv = hive()),
+               read_lines      = function(x) hive::DFS_read_lines(as.character(x), henv = hive()),
+               unlink          = function(x) hive::DFS_delete(x, recursive = TRUE, henv = hive()),
+               write_lines     = function(text, fil) hive::DFS_write_lines(text, as.character(fil), henv = hive()), ...
+              )
 }
 
 ################################################################################
-## DistributedStorage S3 methods
+## DStorage S3 methods
 ################################################################################
 
-is.DistributedStorage <- function( x )
-    inherits( x, "DistributedStorage" )
+is.DStorage <- function( x )
+    inherits( x, "DStorage" )
 
-as.DistributedStorage <- function( x )
-    UseMethod("as.DistributedStorage")
+as.DStorage <- function( x )
+    UseMethod("as.DStorage")
 
-as.DistributedStorage.DistributedStorage <- identity
+as.DStorage.DStorage <- identity
 
-print.DistributedStorage <- function( x, ... ){
-    writeLines( "Distributed storage." )
+print.DStorage <- function( x, ... ){
+    writeLines( "DStorage." )
     writeLines( sprintf("- Type: %s", class(x)[1] ) )
     writeLines( sprintf("- Base directory on storage: %s", DS_base_dir(x)) )
     writeLines( sprintf("- Current chunk size [bytes]: %s", DS_chunksize(x)) )
 }
 
-summary.DistributedStorage <- function( object, ... ){
+summary.DStorage <- function( object, ... ){
     print( object )
     writeLines( sprintf("- Registered methods: %s",
                         paste( names(object)[!(names(object)
@@ -106,24 +107,25 @@ summary.DistributedStorage <- function( object, ... ){
 }
 
 ################################################################################
-## DistributedStorage accessor and replacement functions for class "DistributedCorpus"
+## DStorage accessor and replacement functions for class "DCorpus"
 ################################################################################
 
-DistributedStorage <- function( x )
-  UseMethod("DistributedStorage")
+DStorage <- function( x )
+  UseMethod("DStorage")
 
-DistributedStorage.DistributedStorage <- identity
+DStorage.DStorage <- identity
 
-DistributedStorage.DistributedList <- function( x )
-  attr(x, "DistributedStorage")
+DStorage.DList <- function( x )
+  attr(x, "DStorage")
 
-`DistributedStorage<-` <- function( x, value )
-  UseMethod("DistributedStorage<-")
+`DStorage<-` <- function( x, value )
+  UseMethod("DStorage<-")
 
-`DistributedStorage<-.DistributedList` <- function(x, value){
-  old_stor <- DistributedStorage(x)
+## FIXME
+`DStorage<-.DList` <- function(x, value){
+  old_stor <- DStorage(x)
   stopifnot( DS_list_directory(value, DS_base_dir(value)) )
-  if( inherits(old_stor, "local_disk") && inherits(value, "HDFS") ){
+  if( inherits(old_stor, "LFS") && inherits(value, "HDFS") ){
     if( !length(hive::DFS_list(DS_base_dir(value))) ){
       hive::DFS_put( file.path(DS_base_dir(old_stor), attr(x, "ActiveRevision")),
                file.path(DS_base_dir(value), attr(x, "ActiveRevision")) )
@@ -135,15 +137,15 @@ DistributedStorage.DistributedList <- function( x )
   } else {
     stop("not implemented!")
   }
-  attr(x, "DistributedStorage") <- value
+  attr(x, "DStorage") <- value
   x
 }
 
 ################################################################################
-## DS_storage helper functions
+## DStorage helper functions
 ################################################################################
 
-## helper function for DistributedCorpus -> Corpus coercion
+## helper function for DList -> list coercion
 ## checks if all chunks are already in place
 ## FIXME: we need to provide some checksums here
 .check_contents_of_storage <- function(x, value){
@@ -160,7 +162,7 @@ DistributedStorage.DistributedList <- function( x )
     if( missing(x) )
         x <- DS_default()
     ## Create storage base directory
-    if( is.DistributedStorage(x) )
+    if( is.DStorage(x) )
        x$dir_create( DS_base_dir(x) )
 
     out <- if( inherits(tryCatch(check_storage_for_sanity(x),
@@ -178,26 +180,26 @@ DS_chunksize <-function( storage )
     storage$chunksize
 
 DS_dir_create <- function( storage, dir ){
-    stopifnot( is.DistributedStorage(storage) )
+    stopifnot( is.DStorage(storage) )
     dir <- sub("/./", "", file.path(DS_base_dir(storage), dir ))
     storage$dir_create( dir )
 }
 
 DS_list_directory <- function( storage, dir = "." ){
-    stopifnot( is.DistributedStorage(storage) )
+    stopifnot( is.DStorage(storage) )
     if( dir == "." )
         dir <- ""
     storage$list_directory( file.path(DS_base_dir(storage), dir ) )
 }
 
 DS_fetch_last_line <- function( storage, file ){
-    stopifnot( is.DistributedStorage(storage) )
+    stopifnot( is.DStorage(storage) )
     file <- sub("/./", "", file.path(DS_base_dir(storage), file ))
     storage$fetch_last_line( file )
 }
 
 DS_read_lines <- function( storage, file ){
-    stopifnot( is.DistributedStorage(storage) )
+    stopifnot( is.DStorage(storage) )
     #file <- sub("/./", "", file.path(storage$base_directory, file ))
     file <- file.path(DS_base_dir(storage), file )
     storage$read_lines( file )
@@ -206,19 +208,19 @@ DS_read_lines <- function( storage, file ){
 ## NOTE: due to security reasons no recursive unlinking is permitted!
 ## deletes a link on the corresponding storage (file, directory)
 DS_unlink <- function( storage, link ){
-    stopifnot( is.DistributedStorage(storage) )
+    stopifnot( is.DStorage(storage) )
     link <- sub("/./", "", file.path(DS_base_dir(storage), link ))
     storage$unlink( link )
 }
 
 DS_write_lines <- function( storage, text, file ){
-    stopifnot( is.DistributedStorage(storage) )
+    stopifnot( is.DStorage(storage) )
     file <- sub("/./", "", file.path(DS_base_dir(storage), file ))
     storage$write_lines( text, file )
 }
 
 check_storage_for_sanity <- function( storage ){
-    stopifnot( is.DistributedStorage(storage) )
+    stopifnot( is.DStorage(storage) )
 
     dir <- basename( tempfile() )
     DS_dir_create( storage, dir )
@@ -245,7 +247,7 @@ check_storage_for_sanity <- function( storage ){
 ## local file system manipulators
 ################################################################################
 
-lfs_remove <- function( x ){
+LFS_remove <- function( x ){
     foo <- file.remove
     ## on Windows file.remove does not remove empty directories
     ## so we need to check for it

@@ -1,40 +1,50 @@
-## Constructor
-export("DistributedList")
+################################################################################
+## DList
+################################################################################
+
+## DList constructor
+export("DList")
 
 ## Generic functions
-export("as.DistributedList")
+export("as.DList")
 
-#export("DSL_lapply")
-export("DSL_gather")
-#export("DSL_reduce")
+## Methods on DList
+S3method("[[", "DList")
+##S3method("[[<-", "DList")
+S3method("length", "DList")
+S3method("names", "DList")
+S3method("names<-", "DList")
+S3method("print", "DList")
 
-## Methods on DistributedList
-S3method("[[", "DistributedList")
-##S3method("[[<-", "DistributedList")
-S3method("length", "DistributedList")
-S3method("names", "DistributedList")
-S3method("names<-", "DistributedList")
-S3method("print", "DistributedList")
-##S3method("summary", "DistributedList")
+## DList coercion
+S3method("as.DList", "list")
+S3method("as.DList", "DList")
+S3method("as.list", "DList")
 
-
-## Methods on Corpus
-S3method("as.DistributedList", "list")
-S3method("as.DistributedList", "DistributedList")
-S3method("as.list", "DistributedList")
-
+################################################################################
+## DStorage
+################################################################################
 
 ## Storage backend
-export("NewDistributedStorage",
-       "DistributedStorage",
-       "DistributedStorage<-",
-       "as.DistributedStorage",
-       "is.DistributedStorage")
+export( "DStorage_create",
+        "DStorage",
+        "DStorage<-",
+        "as.DStorage",
+        "is.DStorage" )
 
-S3method("DistributedStorage", "DistributedList")
-S3method("DistributedStorage", "DistributedStorage")
-S3method("DistributedStorage<-", "DistributedList")
-S3method("as.DistributedStorage", "DistributedStorage")
+S3method("DStorage", "DList")
+S3method("DStorage<-", "DList")
+S3method("DStorage", "DStorage")
+S3method("as.DStorage", "DStorage")
+S3method("print", "DStorage")
+S3method("summary", "DStorage")
 
-S3method("print", "DistributedStorage")
-S3method("summary", "DistributedStorage")
+################################################################################
+## DList Operations
+################################################################################
+
+# MapReduce, gather, and lapply functions
+export("DGather")
+export("DLapply")
+export("DMap")
+#export("DReduce")

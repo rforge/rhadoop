@@ -49,3 +49,20 @@ dc_write_output <- function( key, value )
 
 Keys <- function( x )
     attr(x, "Keys")
+
+## Operations on DSL objects (getters)
+
+.get_chunks_from_current_revision <- function(x){
+    .get_chunks( x )
+}
+
+.get_chunks <- function( x, rev ){
+    if( missing(rev) )
+        rev <- .get_revisions( x )[1]
+    rev <- as.character( rev )
+    get(rev, attr(x, "Chunks"))
+}
+
+.get_revisions <- function( x )
+    get("Revisions", envir = attr( as.DistributedList(x), "Chunks"))
+

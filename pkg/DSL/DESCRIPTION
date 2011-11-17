@@ -6,4 +6,4 @@ Description: A package providing functions and methods for handling distributed 
 Author: Ingo Feinerer and Stefan Theussl
 Maintainer: Stefan Theussl <Stefan.Theussl@wu.ac.at>
 License: GPL-3
-Suggests: hive (>= 0.1-11)
+Suggests: hive (>= 0.1-11), parallel
