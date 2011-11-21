@@ -34,18 +34,19 @@ DMap <- function( x, MAP, parallel, ..., keep = FALSE ){
     if( inherits(DStorage(x), "HDFS") )
         parallel <- TRUE
     new_rev <- .DMap( DStorage(x), x = x, MAP = MAP, parallel = parallel, ... )
-    ch <- .make_chunk_handler(file.path(new_rev, basename(.get_chunks( x ))),
-                              new_rev,
-                              DStorage(x))
+
     if( keep )
-        #### FIX HERE ####
-        out <- .update_DSL( x, new_rev )
+        #### FIXME: o currently this has some possibly unforeseen side effects
+        ####        o garbage collection
+        out <- .DList_add_revision( x, new_rev )
     else
         out <- .DList( list(),
-                      ch,
-                      attr( x, "Keys" ),
-                      attr( x, "Mapping" ),
-                      DStorage( x )
+                       .make_chunk_handler(file.path(new_rev, basename(.get_chunks( x ))),
+                                           new_rev,
+                                           DStorage(x)),
+                       attr( x, "Keys" ),
+                       attr( x, "Mapping" ),
+                       DStorage( x )
                       )
     attr( out, "Keys") <- .get_keys_from_current_revision( out )
     out
@@ -64,4 +65,14 @@ DPair <- function( key, value )
 
 .get_keys_from_current_revision <- function( x ){
     structure( unlist(DGather( x, keys = TRUE)), names = NULL )
+}
+
+## updates given list with new revision
+.DList_add_revision <- function( x, rev ){
+    ## add new revision
+    chunks <- .get_chunks_from_current_revision( x )
+    assign(rev, file.path(rev, basename(chunks)), envir = attr(x, "Chunks"))
+    .revisions( x ) <- c( rev, .revisions(x) )
+    ## update to active revision
+    x
 }

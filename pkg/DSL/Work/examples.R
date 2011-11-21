@@ -44,15 +44,16 @@ stopifnot( identical(l2, l2a) )
 ## make.names()
 dl <- DList( a = "muh", b = "kuh" )
 
-
-MAP <- function( keypair )
-        list( key = keypair$key, value = FUN(keypair$value) )
 foo <- function( keypair )
     list( key = paste("m", keypair$key, sep = ""), value = c("map", keypair$value) )
 dlm <- DMap( x = dl, MAP = foo)
 names(dlm)
 DGather( dlm, keys = TRUE )
 DKeys( dlm )
+## same but with new revision; NOTE:: this has the side effect that environment in dlm is changed too!!!!
+## generally, keeping revisions works pretty good
+dlm2 <- DMap( x = dlm, MAP = foo, keep = TRUE)
+DSL:::.revisions( dlm2 )
 
 ## test lapply
 dl <- DList( a = "muh", b = "kuh" )
@@ -137,3 +138,13 @@ reut <- as.DList( Reuters21578 )
 
 # Test 2011-11-16: success
 #test <- lapply( seq_along(Reuters21578), function( i ) identical(Reuters21578[[i]], reut[[i]]) )
+
+
+## Useful Examples:
+
+## Read in a bunch of files in key/value pair format
+dl <- as.DList("/tmp")
+dl <- DMap(dl, function( keypair ){
+    list( key = keypair$key, value = tryCatch(readLines(keypair$value), error = function(x) NA) )
+})
+
