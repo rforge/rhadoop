@@ -22,6 +22,7 @@ export(## the hive
        "DFS_put",
        "DFS_put_object",
        "DFS_read_lines",
+       "DFS_rename",
        "DFS_tail",
        "DFS_write_lines",
        ## MapReduce functions

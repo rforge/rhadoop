@@ -10,6 +10,7 @@
 \alias{DFS_put}
 \alias{DFS_put_object}
 \alias{DFS_read_lines}
+\alias{DFS_rename}
 \alias{DFS_tail}
 \alias{DFS_write_lines}
 
@@ -28,6 +29,7 @@ DFS_dir_remove( path, recursive = TRUE, henv = hive() )
 DFS_file_exists( file, henv = hive() )
 DFS_get_object( file, henv = hive() )
 DFS_read_lines( file, n = -1L, henv = hive() )
+DFS_rename( from, to, henv = hive() )
 DFS_list( path = ".", henv = hive() )
 DFS_tail( file, n = 6L, size = 1024L, henv = hive() )
 DFS_put( files, path = ".", henv = hive() )
@@ -53,6 +55,9 @@ DFS_write_lines( text, file, henv = hive() )
   \item{con}{A connection to be used for printing the output provided by
     \code{cat}. Default: standard output connection, has currently no
     other effect}
+  \item{from}{a character string representing a file or directory on the
+    DFS to be renamed.}
+  \item{to}{a character string representing the new filename on the DFS.}
 }
 \details{
   The Hadoop Distributed File System (HDFS) is typically part of a Hadoop

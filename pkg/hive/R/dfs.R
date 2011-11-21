@@ -116,6 +116,12 @@ DFS_cat <- function( file, con = stdout(), henv = hive() ){
   .DFS("-cat", file, henv)
 }
 
+DFS_rename <- function( from, to, henv = hive() ){
+    stopifnot( DFS_file_exists(from, henv) )
+    .DFS_rename( from, to, henv )
+}
+
+
 DFS_tail <- function(file, n = 6L, size = 1024, henv = hive() ){
   stopifnot( as.integer(n) > 0L )
   stopifnot( DFS_file_exists(file, henv) )
@@ -275,6 +281,12 @@ DFS_get_object <- function( file, henv = hive() ) {
     ## for the time being return TRUE
     ## TODO: this should return an R object containing the stat information
     TRUE
+}
+
+.DFS_rename <- function( from, to, henv ){
+    stopifnot( DFS_is_registered(henv) )
+    hdfs <- HDFS(henv)
+    hdfs$rename(HDFS_path(from), HDFS_path(to))
 }
 
 .DFS_getFileStatus <- function(x, henv){

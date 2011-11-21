@@ -1,0 +1,21 @@
+2011-11-21  Stefan Theussl  <stefan.theussl@wu.ac.at>
+
+	* R/dfs.R (DFS_rename): new function for renaming files on a DFS
+	* man/dfs.Rd (DFS_rename): new man page entry
+	* DESCRIPTION: now using Authors@R for autogeneration of Author and
+	Maintainer field.
+	* ChangeLog: started a ChangeLog file.
+	* release: update submitted to CRAN (version 0.1-12)
+
+2011-11-10  Stefan Theussl  <stefan.theussl@wu.ac.at>
+
+	* release: updated package submitted CRAN (version 0.1-11)
+
+2011-01-10  Stefan Theussl  <stefan.theussl@wu.ac.at>
+
+	* release: bugfix release of package hive to CRAN (version 0.1-9)
+
+2010-12-18  Stefan Theussl  <stefan.theussl@wu.ac.at>
+
+	* release: first release of package hive to CRAN (version 0.1-8)
+
