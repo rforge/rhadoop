@@ -70,12 +70,12 @@ DS_default <- function(){
     .DStorage( type = "HDFS",
                base_directory  = base_dir,
                chunksize       = chunksize,
-              dir_create      = function(x) hive::DFS_dir_create(x, henv = hive()),
-               fetch_last_line = function(x) hive::DFS_tail(n = 1L, as.character(x), henv = hive()),
-               list_directory  = function(x) hive::DFS_list(x, henv = hive()),
-               read_lines      = function(x) hive::DFS_read_lines(as.character(x), henv = hive()),
-               unlink          = function(x) hive::DFS_delete(x, recursive = TRUE, henv = hive()),
-               write_lines     = function(text, fil) hive::DFS_write_lines(text, as.character(fil), henv = hive()), ...
+               dir_create      = function(x) hive::DFS_dir_create(x, henv = hive::hive()),
+               fetch_last_line = function(x) hive::DFS_tail(n = 1L, as.character(x), henv = hive::hive()),
+               list_directory  = function(x) hive::DFS_list(x, henv = hive::hive()),
+               read_lines      = function(x) hive::DFS_read_lines(as.character(x), henv = hive::hive()),
+               unlink          = function(x) hive::DFS_delete(x, recursive = TRUE, henv = hive::hive()),
+               write_lines     = function(text, fil) hive::DFS_write_lines(text, as.character(fil), henv = hive::hive()), ...
               )
 }
 

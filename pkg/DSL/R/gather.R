@@ -1,14 +1,25 @@
 
 ## collects all elements in a chunk file and returns a named list of those elements
-DGather <- function( x ){
-    chunks <- .get_chunks_from_current_revision(x) ## utils.R
+DGather <- function( x, keys = FALSE, n = -1L ){
+    chunks <- .get_chunks_from_current_revision(x)
+    if( n > 0L ){
+        len <- length(chunks)
+        n <- ifelse( n > len, len, n )
+        chunks <- chunks[1L:n] ## utils.R
+    }
+
     out <- lapply(chunks,
                   function(f){
                       lines <- DS_read_lines( DStorage(x),
                                      f )
                       ## note, the last line just contains information about the keys
                       len <- length( lines )
-                      lapply(lines[ -len ], function(line) DSL_unserialize_object( strsplit( line, "\t" )[[ 1 ]][ 2 ] ))
+                      lapply(lines[ -len ], function(line)
+                             if( !keys )
+                             DSL_unserialize_object( strsplit( line, "\t" )[[ 1L ]][ 2L ] )
+                             else
+                             strsplit( line, "\t" )[[ 1L ]][ 1L ]
+                             )
                   })
     names(out) <- chunks
     out

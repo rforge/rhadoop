@@ -8,7 +8,13 @@
 
 ## FIXME: handle special case where DStorage is not a storage type object
 DList <- function( ... ){
-    as.DList( list(...), DStorage = NULL )
+    args <- list( ... )
+    ds <- args$DStorage
+    if( !is.null(ds) ){
+        ds <- as.DStorage( ds )
+        args[[ "DStorage" ]] <- NULL
+    }
+    as.DList( args, DStorage = ds )
 }
 
 as.DList <- function(x, DStorage = NULL, ...){
@@ -20,7 +26,7 @@ as.DList.DList <- function(x, DStorage = NULL, ...)
 
 as.DList.list <- function(x, DStorage = NULL, ...){
     if( is.null(DStorage) )
-        storage <- DS_default()
+        DStorage <- DS_default()
 
     ## dont think we need active revision here, we write directly into base_dir
     ## activeRev <- .generate_random_revision()
@@ -39,7 +45,10 @@ as.DList.list <- function(x, DStorage = NULL, ...){
     size <- 0L
     mapping <- DSL_hash( length(x), ids = names(x) )
     rev <- .make_DSL_revision()
-    DS_dir_create( storage, rev ) ## comparable to revision
+    DS_dir_create( DStorage, rev ) ## comparable to revision
+    keys <- make.names( names(x) )
+    if( !length(keys) )
+        keys <- seq_len(length(x))
     outlines <- character( 0L )
     firstkey <- 1L
     ## Loop over list elements and write element per element into tempfile() in DFS
@@ -50,14 +59,14 @@ as.DList.list <- function(x, DStorage = NULL, ...){
         position <- position + 1L
 
         ## add key/value pair to outlines, which will be written to disk after reaching max chunk size
-        outlines <- c( outlines, sprintf("%s\t%s", as.character(i), DSL_serialize_object(x[[i]])) )
+        outlines <- c( outlines, sprintf("%s\t%s", keys[i], DSL_serialize_object(x[[i]])) )
 
         ## write chunk if size greater than pre-defined chunksize5B
-        if(object.size(outlines) >= DS_chunksize(storage)){
-            outlines <- c( outlines, .make_chunk_signature(firstkey, i) )
+        if(object.size(outlines) >= DS_chunksize(DStorage)){
             chunk <- .make_chunk_filename( rev )
+            outlines <- c( outlines, .make_chunk_signature(keys[firstkey], keys[i], chunk) )
             chunks <- c( chunks, chunk )
-            DS_write_lines(storage, outlines, chunk )
+            DS_write_lines(DStorage, outlines, chunk )
             outlines <- character(0L)
             firstkey <- i + 1
             position <- 1L
@@ -66,18 +75,18 @@ as.DList.list <- function(x, DStorage = NULL, ...){
     }
     ## write remaining elements to final chunk
     if(length(outlines)){
-        outlines <- c( outlines, .make_chunk_signature(firstkey, i) )
         chunk <- .make_chunk_filename( rev )
+        outlines <- c( outlines, .make_chunk_signature(keys[firstkey], keys[i], chunk) )
         chunks <- c( chunks, chunk )
-        DS_write_lines(storage, outlines, chunk )
+        DS_write_lines(DStorage, outlines, chunk )
         chunk_iterator <- chunk_iterator + 1
     }
 
     .DList( x = list(),
-                      chunks = .make_chunk_handler(chunks, rev, storage),
-                      keys = seq_len(length(x)),
+                      chunks = .make_chunk_handler(chunks, rev, DStorage),
+                      keys = keys,
                       mapping = mapping,
-                      storage = storage )
+                      storage = DStorage )
 }
 
 .DList <- function( x,  chunks, keys,

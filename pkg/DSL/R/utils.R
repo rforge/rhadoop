@@ -98,11 +98,20 @@ DSL_get_text_mapping_from_revision <- function( x, rev = .revisions(x)[1] )
 
 ## chunk signature (each chunk contains a signature determining the final line)
 
-.make_chunk_signature <- function(first, last)
+.make_chunk_signature <- function(first, last, chunk)
     sprintf("%s\t%s",
             .stamp(),
-            DSL_serialize_object(c(First_key = as.integer(first),
-                                   Last_key  = as.integer(last))) )
+            DSL_serialize_object(c(First_key = first,
+                                   Last_key  = last,
+                                   Chunk = chunk)) )
+
+.read_chunk_signature <- function( storage, chunk ){
+    split <- strsplit( storage$fetch_last_line(file.path(DS_base_dir(storage), chunk)), "\t" )
+    out <- NULL
+    if( length(split) )
+        out <- list( key = split[[1]][1], value = DSL_unserialize_object(split[[1]][2]) )
+    out
+}
 
 ## make key for final line in MapReduce operations
 .stamp <- function(){
@@ -111,4 +120,5 @@ DSL_get_text_mapping_from_revision <- function( x, rev = .revisions(x)[1] )
           Sys.info()["nodename"], sep = "-")
 }
 
-
+DKeys <- function( x )
+    attr(x, "Keys")

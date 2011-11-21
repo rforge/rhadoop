@@ -1,9 +1,8 @@
 Package: DSL
-Version: 0.0-1
-Date: 2011-11-10
+Version: 0.1-0
+Date: 2011-11-18
 Title: Distributed Storage and List
-Description: A package providing functions and methods for handling distributed storage (DS) and lists (DL). It implements an abstract DistributedList class for storing large list-type objects in a distributed manner. In doing so it uses a well defined storage backend implemented based on the DistributedStorage class. It allows for processing such DLs on distributed systems efficiently.
-Author: Ingo Feinerer and Stefan Theussl
-Maintainer: Stefan Theussl <Stefan.Theussl@wu.ac.at>
+Description: A package providing functions and methods for handling distributed storage (DStorage) and lists (DLlist). It implements an abstract DList class for storing large list-type objects in a distributed manner. In doing so it uses a well defined storage backend implemented based on the DStorage class. It allows for processing such DLists on distributed systems efficiently.
+Authors@R: c(person("Ingo", "Feinerer", role = "aut"), person("Stefan", "Theussl", role = c("aut", "cre"), email = "Stefan.Theussl@wu.ac.at"))
 License: GPL-3
-Suggests: hive (>= 0.1-11), parallel
+Suggests: hive (>= 0.1-12), parallel
