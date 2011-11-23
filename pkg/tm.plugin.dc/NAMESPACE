@@ -1,44 +1,28 @@
 import("tm")
-import("slam")
+import("DSL")
 useDynLib("tm.plugin.dc")
 
-## Constructor
-export("DistributedCorpus")
+## Constructor (second constructor for compatibility reasons)
+export("DCorpus", "DistributedCorpus")
 
-## Helper functions
-export("setRevision")
+## Revisions
 export("getRevisions")
+export("setRevision")
+export("removeRevision")
 
 ## Generic functions
-export("as.DistributedCorpus")
+export("as.DCorpus", "as.DistributedCorpus")
 export("as.Corpus")
 
 ## Methods on DistributedCorpus
-S3method("[[", "DistributedCorpus")
-S3method("DMetaData", "DistributedCorpus")
-S3method("length", "DistributedCorpus")
-S3method("print", "DistributedCorpus")
-S3method("summary", "DistributedCorpus")
+S3method("DMetaData", "DCorpus")
+S3method("print", "DCorpus")
+S3method("summary", "DCorpus")
 S3method("TermDocumentMatrix", "DistributedCorpus")
-S3method("tm_map", "DistributedCorpus")
+S3method("tm_map", "DCorpus")
 
 ## Methods on Corpus
-S3method("as.DistributedCorpus", "Corpus")
-S3method("as.DistributedCorpus", "DistributedCorpus")
+S3method("as.DCorpus", "Corpus")
+S3method("as.DCorpus", "DCorpus")
 S3method("as.Corpus", "Corpus")
-S3method("as.Corpus", "DistributedCorpus")
-
-## Storage functions
-export("dc_storage_create",
-       "dc_storage",
-       "dc_storage<-",
-       "as.dc_storage",
-       "is.dc_storage")
-
-S3method("dc_storage", "DistributedCorpus")
-S3method("dc_storage", "dc_storage")
-S3method("dc_storage<-", "DistributedCorpus")
-S3method("as.dc_storage", "dc_storage")
-
-S3method("print", "dc_storage")
-S3method("summary", "dc_storage")
+S3method("as.Corpus", "DCorpus")

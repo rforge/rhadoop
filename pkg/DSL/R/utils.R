@@ -42,10 +42,15 @@ DSL_get_text_mapping_from_revision <- function( x, rev = .revisions(x)[1] )
     get("Revisions", envir = attr( as.DList(x), "Chunks"))
 
 `.revisions<-` <- function( x, value ){
+    revs <- .revisions( x )
+    to_delete <- revs[! revs %in% value]
+    for(rev in to_delete){
+        lapply(.get_chunks(x, rev), function(f) DS_unlink(DStorage(x), f))
+        DS_unlink(DStorage(x), rev)
+    }
     assign("Revisions", value, envir = attr( as.DList(x), "Chunks"))
     x
 }
-
 
 ## chunk signature (each chunk contains a signature determining the final line)
 

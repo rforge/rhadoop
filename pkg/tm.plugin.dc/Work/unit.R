@@ -2,7 +2,7 @@
 ## Initializiation
 ################################################################################
 
-library(tm.plugin.dc)
+require(tm.plugin.dc)
 data(crude)
 
 ################################################################################
@@ -19,7 +19,6 @@ stopifnot( all(sapply(seq_len(length(dc)),
                       function(x) identical(crude[[x]], dc[[x]]))) )
 
 ## -> crude: preprocess distributed corpus
-
 ################################################################################
 
 dc <- tm_map(dc, stemDocument)
@@ -38,7 +37,7 @@ control <- list( removePunctuation = TRUE,
                  stopwords = TRUE )
 
 ## we need do set the revision back to the original
-dc <- setRevision(dc, getRevisions(dc)[[1]])
+dc <- setRevision(dc, getRevisions(dc)[length(getRevisions(dc))])
 tdm_dc <- TermDocumentMatrix(dc, control = control )
 tdm_c <- TermDocumentMatrix(crude, control = control )
 stopifnot(identical(tdm_c, tdm_dc))
@@ -153,3 +152,13 @@ data( "Reuters" )
 data( "ReutersTDM" )
 
 stopifnot( identical(ReutersTDM_hadoop, ReutersTDM) )
+
+
+## new tests
+require( "tm.plugin.dc" )
+src <- DirSource( "/tmp" )
+
+dc <- DCorpus( src )
+as.DCorpus(dc)
+DStorage( dc )
+
