@@ -123,22 +123,22 @@ DStorage.DList <- function( x )
 
 ## FIXME
 `DStorage<-.DList` <- function(x, value){
-  old_stor <- DStorage(x)
-  stopifnot( DS_list_directory(value, DS_base_dir(value)) )
-  if( inherits(old_stor, "LFS") && inherits(value, "HDFS") ){
-    if( !length(hive::DFS_list(DS_base_dir(value))) ){
-      hive::DFS_put( file.path(DS_base_dir(old_stor), attr(x, "ActiveRevision")),
-               file.path(DS_base_dir(value), attr(x, "ActiveRevision")) )
+    old_stor <- DStorage(x)
+    if( inherits(old_stor, "LFS") && inherits(value, "HDFS") ){
+        if( !length(hive::DFS_list(DS_base_dir(value))) ){
+            for( rev in .revisions(x) )
+                hive::DFS_put( file.path(DS_base_dir(old_stor), rev),
+                              file.path(DS_base_dir(value), rev) )
+        }
+        else {
+            if( !.check_contents_of_storage(x, value) )
+                stop("HDFS storage already contains this directory with different data for the active revision")
+        }
+    } else {
+        stop("not implemented!")
     }
-    else {
-      if( !.check_contents_of_storage(x, value) )
-        stop("HDFS storage already contains this directory with different data for the active revision")
-    }
-  } else {
-    stop("not implemented!")
-  }
-  attr(x, "DStorage") <- value
-  x
+    attr(x, "DStorage") <- value
+    x
 }
 
 ################################################################################

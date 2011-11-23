@@ -162,3 +162,15 @@ dc <- DCorpus( src )
 as.DCorpus(dc)
 DStorage( dc )
 
+require("tm.corpus.Reuters21578")
+data("Reuters21578")
+
+ds <- DStorage_create( type = "HDFS", base_dir = tempdir() )
+
+## Option one: directly write to HDFS (currently VERY SLOW)
+system.time( dd <- as.DCorpus(Reuters21578, storage = ds) )
+
+## Option two: first create LFS based DCorpus and then move it to HDFS (faster option!)
+system.time( dl <- as.DCorpus(Reuters21578) )
+system.time( DStorage(dl) <- ds )
+
