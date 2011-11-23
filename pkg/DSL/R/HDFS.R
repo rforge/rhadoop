@@ -39,9 +39,6 @@
 
         con <- file("stdin", open = "r")
 
-        first <- TRUE
-        firstkey <- NA
-        lastkey <- NA
         chunk <- NA
         while (length(line <- readLines(con, n = 1L, warn = FALSE)) > 0) {
             input <- DSL:::DSL_split_line( line )
@@ -49,19 +46,21 @@
                 chunk <- as.character(input$value["Chunk"])
                 break
             }
+
             result <- MAP( input )
-            if( first ){
-                firstkey <- result$key
-                first <- FALSE
-            }
-            lastkey <- result$key
-            writeLines( sprintf("%s\t%s", result$key, DSL:::DSL_serialize_object(result$value)) )
+
+            ## FIXME: should be an object oriented approach here (associative array vs dictionary)
+            if( length(result) > 2 )
+                for( i in seq_along(result) )
+                    writeLines( sprintf("%s\t%s", result[[i]]$key, DSL:::DSL_serialize_object(result[[i]]$value)) )
+            else
+                writeLines( sprintf("%s\t%s", result$key, DSL:::DSL_serialize_object(result$value)) )
         }
 
         ## In the last step we need to add a stamp to this chunk
         ## <key:randomstring, value_serialized:c(firstdocumentkey,lastdocumentkey)>
-        if( !is.na(lastkey) )
-            writeLines( DSL:::.make_chunk_signature(firstkey, lastkey, chunk) )
+        if( !is.na(chunk) )
+            writeLines( DSL:::.make_chunk_signature( chunk ) )
 
         close(con)
 

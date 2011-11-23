@@ -49,12 +49,10 @@ DSL_get_text_mapping_from_revision <- function( x, rev = .revisions(x)[1] )
 
 ## chunk signature (each chunk contains a signature determining the final line)
 
-.make_chunk_signature <- function(first, last, chunk)
+.make_chunk_signature <- function(chunk)
     sprintf("%s\t%s",
             .stamp(),
-            DSL_serialize_object(c(First_key = first,
-                                   Last_key  = last,
-                                   Chunk = chunk)) )
+            DSL_serialize_object(c(Chunk = chunk)) )
 
 .read_chunk_signature <- function( storage, chunk ){
     split <- strsplit( storage$fetch_last_line(file.path(DS_base_dir(storage), chunk)), "\t" )

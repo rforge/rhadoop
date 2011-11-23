@@ -8,6 +8,9 @@ export("DList")
 ## Generic functions
 export("as.DList")
 
+## Check for "DList" objects
+export("is.DList")
+
 ## Methods on DList
 S3method("[[", "DList")
 ##S3method("[[<-", "DList")
@@ -19,6 +22,7 @@ S3method("print", "DList")
 ## DList coercion
 S3method("as.DList", "list")
 S3method("as.DList", "DList")
+S3method("as.DList", "character")
 S3method("as.list", "DList")
 
 ################################################################################
@@ -35,13 +39,11 @@ export( "DKeys" )
 export( "DStorage_create",
         "DStorage",
         "DStorage<-",
-        "as.DStorage",
         "is.DStorage" )
 
 S3method("DStorage", "DList")
 S3method("DStorage<-", "DList")
 S3method("DStorage", "DStorage")
-S3method("as.DStorage", "DStorage")
 S3method("print", "DStorage")
 S3method("summary", "DStorage")
 

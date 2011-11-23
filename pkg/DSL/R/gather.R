@@ -1,6 +1,6 @@
 
 ## collects all elements in a chunk file and returns a named list of those elements
-DGather <- function( x, keys = FALSE, n = -1L ){
+DGather <- function( x, keys = FALSE, n = -1L, names = TRUE ){
     chunks <- .get_chunks_from_current_revision(x)
     if( n > 0L ){
         len <- length(chunks)
@@ -21,7 +21,8 @@ DGather <- function( x, keys = FALSE, n = -1L ){
                              strsplit( line, "\t" )[[ 1L ]][ 1L ]
                              )
                   })
-    names(out) <- chunks
+    if( names )
+        names(out) <- chunks
     out
 }
 

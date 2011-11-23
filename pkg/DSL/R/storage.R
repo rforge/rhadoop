@@ -83,8 +83,8 @@ DS_default <- function(){
 ## DStorage S3 methods
 ################################################################################
 
-is.DStorage <- function( x )
-    inherits( x, "DStorage" )
+is.DStorage <- function( ds )
+    inherits( ds, "DStorage" )
 
 as.DStorage <- function( x )
     UseMethod("as.DStorage")

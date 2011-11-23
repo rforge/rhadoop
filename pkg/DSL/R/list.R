@@ -64,7 +64,7 @@ as.DList.list <- function(x, DStorage = NULL, ...){
         ## write chunk if size greater than pre-defined chunksize5B
         if(object.size(outlines) >= DS_chunksize(DStorage)){
             chunk <- .make_chunk_filename( rev )
-            outlines <- c( outlines, .make_chunk_signature(keys[firstkey], keys[i], chunk) )
+            outlines <- c( outlines, .make_chunk_signature(chunk) )
             chunks <- c( chunks, chunk )
             DS_write_lines(DStorage, outlines, chunk )
             outlines <- character(0L)
@@ -76,7 +76,7 @@ as.DList.list <- function(x, DStorage = NULL, ...){
     ## write remaining elements to final chunk
     if(length(outlines)){
         chunk <- .make_chunk_filename( rev )
-        outlines <- c( outlines, .make_chunk_signature(keys[firstkey], keys[i], chunk) )
+        outlines <- c( outlines, .make_chunk_signature(chunk) )
         chunks <- c( chunks, chunk )
         DS_write_lines(DStorage, outlines, chunk )
         chunk_iterator <- chunk_iterator + 1
@@ -126,6 +126,9 @@ as.DList.character <- function(x, DStorage = NULL, ...){
     } )
     e
 }
+
+is.DList <- function(x)
+    inherits(x, "DList")
 
 ## S3 Methods
 print.DList <- function(x, ...) {

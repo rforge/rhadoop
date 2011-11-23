@@ -148,3 +148,24 @@ dl <- DMap(dl, function( keypair ){
     list( key = keypair$key, value = tryCatch(readLines(keypair$value), error = function(x) NA) )
 })
 
+
+## Another test example: a key-value pair procuces a set of key value pairs
+l <- list( line1 = "This is the first line.", line2 = "Now, the second line." )
+lapply( l, function(x) unlist(strsplit(x, " ")) )
+
+splitwords <- function( keypair ){
+    keys <- unlist(strsplit(keypair$value, " "))
+    mapply( DSL:::DPair, keys, rep(1L, length(keys)), SIMPLIFY = FALSE, USE.NAMES = FALSE)
+}
+
+
+dl <- as.DList( l )
+res <- DMap( dl, splitwords )
+res[[9]]
+DKeys( res )
+
+## Does not work since stupid Hadoop writes the chunk information to a
+## separate file ...
+dl <- as.DList( l, DStorage = ds )
+res <- DMap( dl, splitwords )
+

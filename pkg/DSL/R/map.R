@@ -1,7 +1,7 @@
 ################################################################################
 ## This file defines the map/lapply function on DList objects
 ## DMap is conceptually based on Google's MapReduce paradigm
-## DLapply behaves like R's lapply
+## DLapply() is based on DMap() and behaves like R's lapply
 ################################################################################
 
 ################################################################################
@@ -48,7 +48,18 @@ DMap <- function( x, MAP, parallel, ..., keep = FALSE ){
                        attr( x, "Mapping" ),
                        DStorage( x )
                       )
-    attr( out, "Keys") <- .get_keys_from_current_revision( out )
+    chunks <- DGather( out, keys = TRUE, names = FALSE )
+    keys <- unlist( chunks )
+    ## reconstruct mapping if we have more keys after the map step
+    if( length(keys) > dim(attr(out, "Mapping" ))[1] ){
+        len <- unlist( lapply( chunks, length ) )
+        new_mapping <- cbind( rep.int(seq_along(len), len), unlist(lapply(len, seq_len)))
+        colnames( new_mapping ) <- c( "Chunk", "Position" )
+        rownames( new_mapping ) <- keys
+        attr( out, "Mapping" ) <- new_mapping
+       }
+    attr( out, "Keys" ) <- keys
+
     out
 }
 
