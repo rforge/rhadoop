@@ -25,7 +25,8 @@ is.DList( x )
 }
 \examples{
 ## coerce to 'DList' object using a default virtual storage
-l <- list( "cow" = "girl", "bull" = "boy" )
+\dontrun{
+l <- list( cow = "girl", bull = "boy" )
 dl <- as.DList( l )
-is.DList( dl )
+is.DList( dl )}
 }

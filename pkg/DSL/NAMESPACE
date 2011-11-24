@@ -2,6 +2,9 @@
 ## DList
 ################################################################################
 
+## collector in C-code
+useDynLib("DSL")
+
 ## DList constructor
 export("DList")
 
@@ -55,4 +58,4 @@ S3method("summary", "DStorage")
 export("DGather")
 export("DLapply")
 export("DMap")
-#export("DReduce")
+export("DReduce")

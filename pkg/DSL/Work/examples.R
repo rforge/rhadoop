@@ -141,7 +141,7 @@ reut <- as.DList( Reuters21578 )
 
 
 ## Useful Examples:
-
+require( "DSL" )
 ## Read in a bunch of files in key/value pair format
 dl <- as.DList("/tmp")
 dl <- DMap(dl, function( keypair ){
@@ -164,6 +164,8 @@ res <- DMap( dl, splitwords )
 res[[9]]
 DKeys( res )
 
+out <- DReduce( res, sum )
+as.list(out)
 ## Does not work since stupid Hadoop writes the chunk information to a
 ## separate file ...
 dl <- as.DList( l, DStorage = ds )

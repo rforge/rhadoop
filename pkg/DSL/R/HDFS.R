@@ -69,6 +69,82 @@
 }
 
 
+## Hadoop Streaming reducer
+.HDFS_reducer <- function() {
+    function(){
+
+        ## INIT
+
+        hive:::redirect_java_output( NULL )
+
+        serialized <- Sys.getenv( "_HIVE_REDUCER_TO_APPLY_" )
+        REDUCE <- if( serialized == "" ){
+            identity
+        } else {
+            unserialize( charToRaw(gsub("\\n", "\n", serialized, fixed = TRUE)) )
+        }
+
+        mapred_write_output <- function(key, value)
+            cat( sprintf("%s\t%s", key,
+                         DSL:::DSL_serialize_object(value)), sep ="\n" )
+
+        ## use efficient collector for integer pairlists
+        CONCATENATE <- function( collector = FALSE )
+            if( collector ){
+                DSL:::.collector2
+            } else {
+                base::c
+            }
+
+        chunk <- NA
+        INTPAIRLIST <- NULL
+
+        ## initialize hash table holding reduce results
+        env <- new.env( hash = TRUE, size = 10240 )
+
+        ## CON
+        con <- file("stdin", open = "r")
+
+        ## STREAM
+
+        while( length(line <- readLines(con, n = 1L, warn = FALSE)) > 0 ) {
+            input <- DSL:::DSL_split_line( line )
+            ## Skip end of line
+            if( length(grep("^<<EOF-", input$key)) ){
+                chunk <- as.character(input$value["Chunk"])
+                break
+            }
+
+            ## we have an efficient collector for integer pair lists (based on linked lists)
+            if( is.null(INTPAIRLIST) )
+                INTPAIRLIST <- is.list(input$value) && all(unlist(lapply(input$value, is.integer)))
+
+            tryCatch( assign(input$key,
+                             CONCATENATE(INTPAIRLIST)(if(tryCatch(exists(input$key, envir = env, inherits = FALSE),
+                                                                  error = function(x) FALSE))
+                                                      get(input$key, envir = env, inherits = FALSE)
+                             else
+                                                      NULL,
+                                                      input$value
+                                                      ),
+                             envir = env
+                             ), error = function(x) FALSE )
+        }
+
+        ## CLOSE
+        close(con)
+
+        ## OUTPUT
+        env <- as.list(env)
+        if( INTPAIRLIST ){
+            env <- lapply(env, DSL:::.collector2, NULL)
+        }
+        keys <- names(env)
+        for( i in seq_along(keys) )
+            mapred_write_output( keys[i], REDUCE(env[[ i ]]) )
+    }
+}
+
 .MapReduce <- function( x, MAP, REDUCE = NULL, ..., cmdenv_arg = NULL ) {
 
     x <- as.DList( x )

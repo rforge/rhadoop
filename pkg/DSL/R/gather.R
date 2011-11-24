@@ -13,8 +13,8 @@ DGather <- function( x, keys = FALSE, n = -1L, names = TRUE ){
                       lines <- DS_read_lines( DStorage(x),
                                      f )
                       ## note, the last line just contains information about the keys
-                      len <- length( lines )
-                      lapply(lines[ -len ], function(line)
+                      neof <- grep("^<<EOF-", lines, invert = TRUE )
+                      lapply(lines[ neof ], function(line)
                              if( !keys )
                              DSL_unserialize_object( strsplit( line, "\t" )[[ 1L ]][ 2L ] )
                              else

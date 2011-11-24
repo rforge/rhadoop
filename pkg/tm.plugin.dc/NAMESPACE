@@ -1,6 +1,5 @@
 import("tm")
 import("DSL")
-useDynLib("tm.plugin.dc")
 
 ## Constructor (second constructor for compatibility reasons)
 export("DCorpus", "DistributedCorpus")

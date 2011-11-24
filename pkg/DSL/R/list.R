@@ -180,7 +180,7 @@ DSL_unserialize_object <- function( x )
 
 ## Revision names
 .make_DSL_revision <- function(){
-    sprintf("DSL-%s-%s%s", format(Sys.time(), "%Y%m%d-%H%M%S"), sample(0:9, 1), sample(letters, 1))
+    sprintf("DSL-%s-%s", format(Sys.time(), "%Y%m%d-%H%M%S"), paste( sample(letters, 10, replace = TRUE), collapse = "" ))
 }
 
 ## chunk file names

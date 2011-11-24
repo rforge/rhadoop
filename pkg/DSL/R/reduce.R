@@ -7,7 +7,7 @@
 ## DReduce function
 ################################################################################
 
-DReduce <- function( x, REDUCE, parallel, ..., keep = FALSE ){
+DReduce <- function( x, REDUCE = identity, parallel, ... ){
     x <- as.DList( x )
     if( missing(parallel) )
         parallel <- FALSE
@@ -16,23 +16,30 @@ DReduce <- function( x, REDUCE, parallel, ..., keep = FALSE ){
     if( inherits(DStorage(x), "HDFS") )
         parallel <- TRUE
 
-    stop( "Not implemented yet" )
     new_rev <- .DReduce( DStorage(x), x = x, REDUCE = REDUCE, parallel = parallel, ... )
 
-    if( keep )
-        #### FIXME: o currently this has some possibly unforeseen side effects
-        ####        o garbage collection
-        out <- .DList_add_revision( x, new_rev )
-    else
-        out <- .DList( list(),
-                       .make_chunk_handler(file.path(new_rev, basename(.get_chunks( x ))),
-                                           new_rev,
-                                           DStorage(x)),
-                       attr( x, "Keys" ),
-                       attr( x, "Mapping" ),
-                       DStorage( x )
-                      )
-    attr( out, "Keys") <- .get_keys_from_current_revision( out )
+    ## there are possibly fewer chunks after reduce (check for them)
+    cn <- basename(.get_chunks(x))
+    chunks <- cn[cn %in% DS_list_directory(DStorage(x), new_rev)]
+    out <- .DList( list(),
+                  .make_chunk_handler(file.path(new_rev, chunks),
+                                      new_rev,
+                                      DStorage(x)),
+                  attr( x, "Keys" ),
+                  attr( x, "Mapping" ),
+                  DStorage( x )
+                  )
+    gathered <- DGather( out, keys = TRUE, names = FALSE )
+    keys <- unlist( gathered )
+    ## reconstruct mapping if we have more keys after the map step
+    if( length(keys) != dim(attr(out, "Mapping" ))[1] ){
+        len <- unlist( lapply( gathered, length ) )
+        new_mapping <- cbind( rep.int(seq_along(len), len), unlist(lapply(len, seq_len)))
+        colnames( new_mapping ) <- c( "Chunk", "Position" )
+        rownames( new_mapping ) <- keys
+        attr( out, "Mapping" ) <- new_mapping
+       }
+    attr( out, "Keys" ) <- keys
     out
 }
 
@@ -42,4 +49,3 @@ DReduce <- function( x, REDUCE, parallel, ..., keep = FALSE ){
 
 .DReduce <- function( storage, x, FUN, parallel, ... )
     UseMethod( ".DReduce" )
-

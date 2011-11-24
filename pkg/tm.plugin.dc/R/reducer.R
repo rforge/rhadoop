@@ -1,4 +1,4 @@
-TermDocumentMatrix.DistributedCorpus <- function( x, control = list() ){
+TermDocumentMatrix.DCorpus <- function( x, control = list() ){
     ## control contains preprocessing function, see help page of termFreq()
 
     ## if empty then termFreq is called with default options (e.g., when
@@ -8,12 +8,13 @@ TermDocumentMatrix.DistributedCorpus <- function( x, control = list() ){
     ## makes the TDMs
 
     ## Start MapReduce job based on storage class
-    rev <- .dc_TermDocumentMatrix( dc_storage(x), x, control )
+    dl <- .dc_TermDocumentMatrix( dc_storage(x), x, control )
 
     ## Retrieve partial results from file system (term / {key / term frequency})
     ## {} indicates serialized object
-    results <- lapply( .read_lines_from_reducer_output( dc_storage(x), rev ),
-                       function(x) strsplit(x, "\t") )
+    results <- DGather( dl )
+
+
 
     ## first extract the terms. NOTE: they are not necessarily unique as there may be
     ## some terms duplicated among different chunks. Terms derived from the same chunk are unique.
@@ -40,13 +41,25 @@ TermDocumentMatrix.DistributedCorpus <- function( x, control = list() ){
                 weighting = tm::weightTf) )
 }
 
-.read_lines_from_reducer_output <- function( storage, rev )
-  unlist( lapply(.get_chunks_from_revision(storage, rev),
-                           function(x) dc_read_lines(storage, x)))
 
-.get_chunks_from_revision <- function(storage, rev)
-  file.path( rev, grep("part-", dc_list_directory(storage, rev),
-                              value =TRUE) )
+
+REDUCE <- function( keypair ){
+    tryCatch( assign(keypair$value$word,
+                     tm.plugin.dc:::.collector2(
+                                       if(tryCatch(exists(keypair$value$word, envir = env, inherits = FALSE), error = function(x) FALSE))
+                                       get(keypair$value$word, envir = env, inherits = FALSE)
+                                       else
+                                       NULL,
+                                       list(keypair$key, keypair$value$count)
+                                       ),
+                           envir = env
+                           ), error = function(x) FALSE )
+
+}
+
+
+
+
 
 .dc_TermDocumentMatrix <- function(storage, x, control)
     UseMethod(".dc_TermDocumentMatrix")

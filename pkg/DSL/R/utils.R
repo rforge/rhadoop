@@ -76,3 +76,7 @@ DSL_get_text_mapping_from_revision <- function( x, rev = .revisions(x)[1] )
 
 DKeys <- function( x )
     attr(x, "Keys")
+
+## thanks to ceeboo: improved collector version to make reduce step run more efficiently
+.collector2 <- function(x = NULL, y, ...)
+      .Call("_collector2", x, y, package = "DSL")

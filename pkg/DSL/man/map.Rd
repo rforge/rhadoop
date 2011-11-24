@@ -9,7 +9,7 @@
 \usage{
 DLapply( x, FUN, parallel, ..., keep = FALSE )
 DMap( x, MAP, parallel, ..., keep = FALSE )
-DReduce( x, REDUCE, parallel, ..., keep = FALSE )
+DReduce( x, REDUCE, parallel, ... )
 }
 \arguments{
   \item{x}{a \code{"\link{DList}"} object. Other objects (e.g., lists) will be
@@ -60,20 +60,25 @@ unlist(DGather(dlm, keys = TRUE, names = FALSE))
 as.list( dlm )
 ## simple wordcount based on two files:
 dir(system.file("examples", package = "DSL"))
-## make "DList" from files
-dl <- as.DList(system.file("examples", package = "DSL"))
+## first force 1 chunk per file (set max chunk size to 1 byte):
+ds <- DStorage_create("LFS", tempdir(), chunksize = 1L)
+## make "DList" from files, i.e., read contents and store in chunks
+dl <- as.DList(system.file("examples", package = "DSL"), DStorage = ds)
 ## read files
 dl <- DMap(dl, function( keypair ){
     list( key = keypair$key, value = tryCatch(readLines(keypair$value),
 error = function(x) NA) )
-
+})
+## split into terms
 splitwords <- function( keypair ){
     keys <- unlist(strsplit(keypair$value, " "))
     mapply( function(key, value) list( key = key, value = value), keys, rep(1L, length(keys)), SIMPLIFY = FALSE, USE.NAMES = FALSE)
 }
 res <- DMap( dl, splitwords )
-})
 as.list(res)
+## now aggregate by term
+res <- DReduce( res, sum )
+as.list( res )
 }
 \references{
   J. Dean and S. Ghemawat (2008).
