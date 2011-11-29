@@ -1,6 +1,6 @@
 Package: hive
-Version: 0.1-12
-Date: 2011-11-21
+Version: 0.1-13
+Date: 2011-11-29
 Title: Hadoop InteractiVE
 Description: Hadoop InteractiVE, is an R extension facilitating distributed 
              computing via the MapReduce paradigm. It provides an easy to use 

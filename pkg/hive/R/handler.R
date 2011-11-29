@@ -180,7 +180,7 @@ hive_set_nreducer <- function( n, henv = hive() ) {
 }
 
 hive_default_nreducer <- function( henv = hive() ){
-  as.integer( length(hive_get_slaves(henv)) / 1.5 )
+    as.integer(round( length(hive_get_slaves(henv)) / 1.5 ))
 }
 
 ## Internal extractor functions

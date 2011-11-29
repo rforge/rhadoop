@@ -92,9 +92,6 @@
 
     ## INIT
 
-    ## initialize hash table holding reduce results
-    env <- new.env( hash = TRUE, size = 10240 )
-
     ## use efficient collector for integer pairlists
     CONCATENATE <- function( collector = FALSE )
         if( collector ){
@@ -105,6 +102,9 @@
 
     chunk <- NA
     INTPAIRLIST <- NULL
+
+    ## initialize hash table holding reduce results
+    env <- new.env( hash = TRUE, size = 10240 )
 
     ## CON
 

@@ -54,6 +54,8 @@ REDUCE <- function( keypair ){
                                        ),
                            envir = env
                            ), error = function(x) FALSE )
+    env <- as.list(env)
+    env <- lapply(env, tm.plugin.dc:::.collector2, NULL)
 
 }
 
@@ -76,41 +78,6 @@ REDUCE <- function( keypair ){
     rev
 }
 
-.local_disk_TDM_mapreducer <- function( control, input, output){
-    con  <- file( input, open = "r" )
-    con2 <- file( output, open = "w" )
-    out  <- list( tm:::.TermDocumentMatrix(simple_triplet_zero_matrix(nrow = 0), weighting=tm::weightTf) )
-    env <- new.env( hash = TRUE, size = 10240 )
-    while (length(line <- readLines(con, n = 1L, warn = FALSE)) > 0) {
-        input <- dc_split_line(line)
-        ## in the TDM mapper we apply termFreq on the documents,
-        ## doing also all the preprocessing tasks.
-        ## Note: the last entry is the DocMapping matrix
-
-        if(!is.integer(input$value)){
-            result <- termFreq(input$value, control)
-            if(length(result)){
-                lapply( names(result), function(x) tryCatch( assign(x, tm.plugin.dc:::.collector2(
-                                                                                                  if(tryCatch(exists(x, envir = env, inherits = FALSE), error = function(x) FALSE))
-                                                                                                  get(x, envir = env, inherits = FALSE)
-                                                                                                  else
-                                                                                                  NULL,
-                                                                                                  list(as.integer(input$key), result[x])
-                                                                                                  ),
-                                                                    envir = env
-                                                                    ), error = function(x) FALSE ) )
-            }
-        }
-    }
-    close(con)
-
-    env <- as.list(env)
-    env <- lapply(env, tm.plugin.dc:::.collector2, NULL)
-    for( term in names(env) )
-        writeLines( sprintf("%s\t%s", dc_encode_term(term),
-                     dc_serialize_object(env[[ term ]])), con = con2 )
-    close(con2)
-}
 
 dc_encode_term <- function(x)
     gsub("\n", "\\\\n", x)

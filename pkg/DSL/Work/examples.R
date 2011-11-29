@@ -166,8 +166,15 @@ DKeys( res )
 
 out <- DReduce( res, sum )
 as.list(out)
+
+
 ## Does not work since stupid Hadoop writes the chunk information to a
 ## separate file ...
+require("hive")
+hive_set_nreducer(1)
+ds <- DStorage_create("HDFS", tempdir())
 dl <- as.DList( l, DStorage = ds )
 res <- DMap( dl, splitwords )
+out <- DReduce( res, REDUCE = sum )
+as.list(out)
 

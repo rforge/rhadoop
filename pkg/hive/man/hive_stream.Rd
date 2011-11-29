@@ -9,7 +9,8 @@
 }
 \usage{
 hive_stream( mapper, reducer, input, output, henv = hive(),
-             mapper_args = NULL, reducer_args = NULL, cmdenv_arg = NULL )
+             mapper_args = NULL, reducer_args = NULL, cmdenv_arg = NULL,
+streaming_args = NULL)
 }
 \arguments{
   \item{mapper}{a function which is executed on each worker node. The
@@ -26,6 +27,9 @@ hive_stream( mapper, reducer, input, output, henv = hive(),
   \item{reducer_args}{additional arguments to the reducer.}
   \item{cmdenv_arg}{additional arguments passed as environment variables
     to distributed tasks.}
+    \item{streaming_args}{additional arguments passed to the Hadoop
+      Streaming utility. By default, only the number of reducers will be
+    set using \code{"-D mapred.reduce.tasks="}.}
 }
 \details{
 
@@ -72,14 +76,14 @@ reducer <- function(x){
     while (length(line <- readLines(con, n = 1L, warn = FALSE)) > 0) {
         keyvalue <- unlist( strsplit(line, "\t") )
         if( exists(keyvalue[1], envir = env, inherits = FALSE) ){
-            assign( keyvalue[1], get(keyvalue[1], envir = env) +
-as.integer(keyvalue[2]), envir = env )
-        } else
+            assign( keyvalue[1], get(keyvalue[1], envir = env) + as.integer(keyvalue[2]), envir = env )
+        } else {
             assign( keyvalue[1], as.integer(keyvalue[2]), envir = env )
+        }
     }
     env <- as.list(env)
     for( term in names(env) )
-        cat( sprintf("%s\t%s", term, env[[term]]), sep ="\n" )
+        writeLines( paste(c(term, env[[term]]), collapse ="\t") )
 }
 hive_set_nreducer(1)
 hive_stream( mapper = mapper, reducer = reducer, input = "/tmp/input", output = "/tmp/output" )

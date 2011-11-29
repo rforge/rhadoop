@@ -1,3 +1,9 @@
+2011-11-29  Stefan Theussl  <stefan.theussl@wu.ac.at>
+
+	* R/streaming.R (hive_stream): accepts now a streaming_args argument
+	* man/hive_stream.Rd (hive_stream): describes the new
+	streaming_args argument
+
 2011-11-21  Stefan Theussl  <stefan.theussl@wu.ac.at>
 
 	* R/dfs.R (DFS_rename): new function for renaming files on a DFS

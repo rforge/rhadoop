@@ -17,9 +17,26 @@
     ## now handle part-xxxx stuff
     ## read all chunk signatures
     .fix_chunknames( DStorage(x), rev )
+
     rev
 }
 
+.DReduce.HDFS <- function( storage, x, REDUCE, parallel, ... ){
+
+    ## SET a user specific command environment variable here
+    cmdenv_arg <- NULL
+    cmdenv_arg <- c( cmdenv_arg,
+                     sprintf("_HIVE_REDUCER_TO_APPLY_=%s",
+                             DSL_serialize_object(REDUCE)) )
+
+    rev <- .MapReduce( x, .HDFS_identity_mapper(), .HDFS_reducer(), cmdenv_arg = cmdenv_arg, ... )
+
+    ## now handle part-xxxx stuff
+    ## read all chunk signatures
+    .fix_chunknames( DStorage(x), rev )
+
+    rev
+}
 
 ## Hadoop Streaming mapper
 .HDFS_mapper <- function() {
@@ -68,6 +85,25 @@
     }
 }
 
+## For reduce-only jobs we need sort of an identity mapper since there
+## must always be a map task before a reduce task according to the
+## MapReduce paradigm.
+.HDFS_identity_mapper <- function(){
+    function(){
+
+        hive:::redirect_java_output( NULL )
+
+        con <- file("stdin", open = "r")
+
+        while (length(line <- readLines(con, n = 1L, warn = FALSE)) > 0) {
+                writeLines( line )
+        }
+
+        close(con)
+
+        invisible( TRUE )
+    }
+}
 
 ## Hadoop Streaming reducer
 .HDFS_reducer <- function() {
@@ -83,10 +119,6 @@
         } else {
             unserialize( charToRaw(gsub("\\n", "\n", serialized, fixed = TRUE)) )
         }
-
-        mapred_write_output <- function(key, value)
-            cat( sprintf("%s\t%s", key,
-                         DSL:::DSL_serialize_object(value)), sep ="\n" )
 
         ## use efficient collector for integer pairlists
         CONCATENATE <- function( collector = FALSE )
@@ -112,7 +144,7 @@
             ## Skip end of line
             if( length(grep("^<<EOF-", input$key)) ){
                 chunk <- as.character(input$value["Chunk"])
-                break
+                next
             }
 
             ## we have an efficient collector for integer pair lists (based on linked lists)
@@ -136,12 +168,15 @@
 
         ## OUTPUT
         env <- as.list(env)
-        if( INTPAIRLIST ){
-            env <- lapply(env, DSL:::.collector2, NULL)
-        }
+        if(!is.null(INTPAIRLIST))
+            if( INTPAIRLIST ){
+                env <- lapply(env, DSL:::.collector2, NULL)
+            }
         keys <- names(env)
         for( i in seq_along(keys) )
-            mapred_write_output( keys[i], REDUCE(env[[ i ]]) )
+            writeLines( sprintf("%s\t%s", keys[i],
+                                DSL:::DSL_serialize_object(REDUCE(env[[ i ]]))) )
+        writeLines( DSL:::.make_chunk_signature( chunk ) )
     }
 }
 
@@ -149,6 +184,18 @@
 
     x <- as.DList( x )
     rev <- .make_DSL_revision()
+
+    #nmaps <- as.integer(hive::hive_get_parameter("mapred.tasktracker.map.tasks.maximum"))
+
+    ## very important: we don't want to split existing chunks into
+    ## separate parts for MapReduce jobs. Hadoop is doing this
+    ## automatically unless we set the "mapred.min.split.size"
+    ## properly. We set it to the overall block size
+    blocksize <- hive::hive_get_parameter("dfs.block.size")
+
+    streaming_args <- sprintf( "-Dmapred.min.split.size=%s", blocksize )
+    if( is.null(REDUCE) )
+        streaming_args <- sprintf("-Dmapred.reduce.tasks=0 %s", streaming_args)
 
     ## MAP/REDUCE are functions e.g., provided by R/packages or any user defined
     ## function. It is supplied to the Rscript via an object file written to
@@ -158,7 +205,8 @@
     hive::hive_stream( MAP, REDUCE,
                        input  = file.path(DStorage(x)$base_directory, .revisions(x)[1]),
                        output = file.path(DStorage(x)$base_directory, rev),
-                       cmdenv_arg = cmdenv_arg )
+                       cmdenv_arg = cmdenv_arg,
+                       streaming_args = streaming_args)
 
     ## in case the streaming job failed to create output directory return error
     stopifnot( hive::DFS_dir_exists(file.path(DStorage(x)$base_directory, rev)) )
