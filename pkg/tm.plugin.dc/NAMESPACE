@@ -1,5 +1,6 @@
 import("tm")
 import("DSL")
+import("slam")
 
 ## Constructor (second constructor for compatibility reasons)
 export("DCorpus", "DistributedCorpus")
@@ -17,7 +18,7 @@ export("as.Corpus")
 S3method("DMetaData", "DCorpus")
 S3method("print", "DCorpus")
 S3method("summary", "DCorpus")
-S3method("TermDocumentMatrix", "DistributedCorpus")
+S3method("TermDocumentMatrix", "DCorpus")
 S3method("tm_map", "DCorpus")
 
 ## Methods on Corpus

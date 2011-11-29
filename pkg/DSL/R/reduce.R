@@ -47,5 +47,5 @@ DReduce <- function( x, REDUCE = identity, parallel, ... ){
 ## .DReduce methods (depend on storage type)
 ################################################################################
 
-.DReduce <- function( storage, x, FUN, parallel, ... )
+.DReduce <- function( storage, x, REDUCE, parallel, ... )
     UseMethod( ".DReduce" )

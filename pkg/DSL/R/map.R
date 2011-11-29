@@ -9,10 +9,11 @@
 ################################################################################
 
 DLapply <- function( x, FUN, parallel, ..., keep = FALSE ){
+    args <- list(...)
     foo <- match.fun(FUN)
     MAP <- function( keypair )
-        list( key = keypair$key, value = foo(keypair$value) )
-    DMap( x = x, MAP = MAP, parallel = parallel, ..., keep = keep )
+        list( key = keypair$key, value = do.call(foo, c(list(keypair$value), args)) )
+    DMap( x = x, MAP = MAP, parallel = parallel, keep = keep )
 
 }
 
@@ -25,7 +26,7 @@ DLapply <- function( x, FUN, parallel, ..., keep = FALSE ){
 ## DMap function
 ################################################################################
 
-DMap <- function( x, MAP, parallel, ..., keep = FALSE ){
+DMap <- function( x, MAP, parallel, keep = FALSE ){
     x <- as.DList( x )
     if( missing(parallel) )
         parallel <- FALSE
@@ -33,7 +34,7 @@ DMap <- function( x, MAP, parallel, ..., keep = FALSE ){
     ## execution on Hadoop clusters
     if( inherits(DStorage(x), "HDFS") )
         parallel <- TRUE
-    new_rev <- .DMap( DStorage(x), x = x, MAP = MAP, parallel = parallel, ... )
+    new_rev <- .DMap( DStorage(x), x = x, MAP = MAP, parallel = parallel )
 
     if( keep )
         #### FIXME: o currently this has some possibly unforeseen side effects
@@ -67,7 +68,7 @@ DMap <- function( x, MAP, parallel, ..., keep = FALSE ){
 ## .DMap methods (depend on storage type)
 ################################################################################
 
-.DMap <- function( storage, x, FUN, parallel, ... )
+.DMap <- function( storage, x, MAP, parallel )
     UseMethod( ".DMap" )
 
 ## not yet used:

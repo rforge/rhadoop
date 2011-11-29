@@ -8,7 +8,7 @@
 }
 \usage{
 DLapply( x, FUN, parallel, ..., keep = FALSE )
-DMap( x, MAP, parallel, ..., keep = FALSE )
+DMap( x, MAP, parallel, keep = FALSE )
 DReduce( x, REDUCE, parallel, ... )
 }
 \arguments{
@@ -20,7 +20,7 @@ DReduce( x, REDUCE, parallel, ... )
     \code{x}.}
   \item{REDUCE}{the function to be applied to each key/value pair in
     \code{x}.}
-  \item{\dots}{optional arguments to \code{FUN}, \code{MAP}, or \code{REDUCE}.}
+  \item{\dots}{optional arguments to \code{FUN} or \code{REDUCE}.}
   \item{parallel}{logical; should the provided functions applied in
     parallel? Default: \code{FALSE}.}
   \item{keep}{logical; should the current data be kept as a separate
@@ -34,7 +34,7 @@ functions: Map and Reduce. The Map function takes an input pair and produces a s
 intermediate key/value pairs. The Reduce function accepts an
 intermediate key and a set of values for that key (possibly
 grouped by the MapReduce library). It merges these values
-together to form a possibly smaller set of values. Typically just zero or
+together to form a possibly smaller set of values. Typically, just zero or
 one output value is produced per reduce invocation. Furthermore, data is
 usually stored on a (distributed) file system which is recognized by the
 MapReduce library. This allows such a framework to handle lists of

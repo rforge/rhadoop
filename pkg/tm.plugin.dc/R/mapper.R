@@ -5,9 +5,9 @@ function(x, FUN, ..., useMeta = FALSE, lazy = FALSE) {
     ## FIXME: what to do with lazy argument?
     result <- x
     if (useMeta)
-        result <- tm:::`Content<-.default`(result, DLapply(x, FUN, ..., DMetaData = DMetaData(x), keep = TRUE))
+        result <- tm:::Content(result) <- DLapply(x, FUN, ..., DMetaData = DMetaData(x), keep = TRUE)
     else
-        result <- tm:::`Content<-.default`(result, DLapply(x, FUN, ..., keep = TRUE))
+    result <- tm:::Content(result) <- DLapply(x, FUN, ..., keep = TRUE)
 
     result
 }

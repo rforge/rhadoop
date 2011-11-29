@@ -3,7 +3,7 @@
 ## The functions below implement DList operations for the "Local File System"
 ################################################################################
 
-.DMap.LFS <- function( storage, x, MAP, parallel, ... ){
+.DMap.LFS <- function( storage, x, MAP, parallel ){
 
     new_rev <- .make_DSL_revision()
     DS_dir_create(storage, new_rev)
@@ -17,9 +17,7 @@
     LAPPLY( basename(.get_chunks(x)), function( chunk )
             .LFS_mapper( MAP = MAP,
                          input  = file.path(storage$base_directory, .revisions( x )[1], chunk),
-                         output = file.path(storage$base_directory, new_rev, chunk)),
-            ...
-         )
+                         output = file.path(storage$base_directory, new_rev, chunk)) )
 
     new_rev
 }

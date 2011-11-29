@@ -1,5 +1,6 @@
 \name{Revisions}
 \alias{getRevisions}
+\alias{removeRevision}
 \alias{setRevision}
 \title{Revisions in a Distributed Corpora}
 \description{
@@ -11,6 +12,7 @@
 }
 \usage{
 getRevisions( corpus )
+removeRevision( corpus, revision )
 setRevision( corpus, revision )
 }
 \arguments{
@@ -25,7 +27,7 @@ setRevision( corpus, revision )
 \examples{
 ## provide data on storage
 data("crude")
-dc <- as.DistributedCorpus(crude)
+dc <- as.DCorpus(crude)
 ## do some preprocessing
 dc <- tm_map(dc, tolower)
 ## retrieve available revisions

@@ -1,5 +1,7 @@
 \name{DistributedCorpus}
+\alias{DCorpus}
 \alias{DistributedCorpus}
+\alias{as.DCorpus}
 \alias{as.DistributedCorpus}
 \alias{as.Corpus}
 
@@ -8,31 +10,31 @@
   Data structures and operators for distributed corpora.
 }
 \usage{
-DistributedCorpus( source,
-                   readerControl = list(reader   = source$DefaultReader,
-                                        language = "eng"),
-                   storage = NULL, keys = NULL, ... )
-as.Corpus( x, ... )
-as.DistributedCorpus( x, storage = NULL, ... )
+DCorpus( x,
+         readerControl = list(reader   = x$DefaultReader,
+                              language = "eng"),
+         storage = NULL, keys = NULL, ... )
+as.Corpus( x )
+as.DCorpus( x, storage = NULL, ... )
 }
 \arguments{
-  \item{source}{A \code{\link[tm]{Source}} object. At the moment only
-    \code{\link[tm]{DirSource}} is supported.}
+  \item{x}{for \code{DCorpus}, a \code{\link[tm]{Source}} object. At the moment only
+    \code{\link[tm]{DirSource}} is supported. For \code{as.Corpus()} and
+    \code{as.DCorpus()}, an object to be coerced to a
+    \code{Corpus}/\code{DCorpus}. Currently coercion from/to
+    classic \pkg{tm} corpora (\code{VCorpus}) is implemented.}
   \item{readerControl}{A list with the named components \code{reader}
     representing a reading function capable of handling the file format
     found in \code{source}, and \code{language} giving the text's language
     (preferably in \acronym{ISO} 639-2 format).}
   \item{storage}{The storage subsystem to use with the
-    DistributedCorpus. Currently two types of storages are supported:
+    DCorpus. Currently two types of storages are supported:
     local disk storage (local_disk) and the Hadoop distributed file
     system (HDFS). If no storage is specified it uses a default storage,
     namely 'local_disk'.}
   \item{keys}{An integer vector of the same length as the number of
     documents in the corpus. Uniquely identifies the document in the
     chunks. Default: a sequence from 1 to the number of documents.}
-  \item{x}{An object to be coerced to a
-    \code{Corpus}/\code{DistributedCorpus}. Currently coercion from/to
-    classic \pkg{tm} corpora (\code{VCorpus}) is implemented.}
   \item{\dots}{Optional arguments for the \code{reader}.}
 }
 \details{When constructing a distributed corpus the input source is
@@ -81,7 +83,7 @@ as.DistributedCorpus( x, storage = NULL, ... )
   }					     
 }
 \value{
-  An object of class \code{DistributedCorpus} which extends the classes
+  An object of class \code{DCorpus} which extends the classes
   \code{Corpus} and \code{list} containing a collection of text
   documents.
 }

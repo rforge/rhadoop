@@ -1,11 +1,11 @@
-\name{TermDocumentMatrix.DistributedCorpus}
-\alias{TermDocumentMatrix.DistributedCorpus}
+\name{TermDocumentMatrix.DCorpus}
+\alias{TermDocumentMatrix.DCorpus}
 \title{Term-Document Matrix from Distributed Corpora}
 \description{
   Constructs a term-document matrix given a distributed corpus.
 }
 \usage{
-\method{TermDocumentMatrix}{DistributedCorpus}(x, control = list())
+\method{TermDocumentMatrix}{DCorpus}(x, control = list())
 }
 \arguments{
   \item{x}{A distributed corpus.}
@@ -22,7 +22,7 @@
 }
 \examples{
 data("crude")
-tdm <- TermDocumentMatrix(as.DistributedCorpus(crude),
+tdm <- TermDocumentMatrix(as.DCorpus(crude),
 control = list(weighting = weightTfIdf, stopwords = TRUE))
 inspect(tdm[155:160,1:5])
 }

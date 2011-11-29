@@ -4,7 +4,7 @@
 ## "Hadoop Distributed File System"
 ################################################################################
 
-.DMap.HDFS <- function( storage, x, MAP, parallel, ... ){
+.DMap.HDFS <- function( storage, x, MAP, parallel ){
 
     ## SET a user specific command environment variable here
     cmdenv_arg <- NULL
@@ -12,7 +12,7 @@
                      sprintf("_HIVE_FUNCTION_TO_APPLY_=%s",
                              DSL_serialize_object(MAP)) )
 
-    rev <- .MapReduce( x, .HDFS_mapper(), cmdenv_arg = cmdenv_arg, ... )
+    rev <- .MapReduce( x, .HDFS_mapper(), cmdenv_arg = cmdenv_arg  )
 
     ## now handle part-xxxx stuff
     ## read all chunk signatures
@@ -180,7 +180,7 @@
     }
 }
 
-.MapReduce <- function( x, MAP, REDUCE = NULL, ..., cmdenv_arg = NULL ) {
+.MapReduce <- function( x, MAP, REDUCE = NULL, cmdenv_arg = NULL ) {
 
     x <- as.DList( x )
     rev <- .make_DSL_revision()
