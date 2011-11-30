@@ -77,7 +77,7 @@ if( inherits(tryCatch(hive_is_available(), error = identity), "error") ){
     hive( hive_create("/home/theussl/lib/hadoop-0.20.1") )
     hive_start()
 }
-stor <- dc_storage_create(type = "HDFS", "/tmp/unittest")
+stor <- DStorage_create(type = "HDFS", "/tmp/unittest")
 stor
 
 
@@ -106,8 +106,8 @@ control <- list( removePunctuation = TRUE,
                  removeNumbers = TRUE,
                  stemming = TRUE,
                  stopwords = TRUE )
-hive_set_nreducer(2)
-hdc <- setRevision(hdc, getRevisions(hdc)[[1]])
+#hive_set_nreducer(2)
+hdc <- setRevision(hdc, getRevisions(hdc)[length(getRevisions(hdc))])
 tdm_hdc <- TermDocumentMatrix(hdc, control = control )
 tdm_c <- TermDocumentMatrix(crude, control = control )
 stopifnot(identical(tdm_c, tdm_hdc))
