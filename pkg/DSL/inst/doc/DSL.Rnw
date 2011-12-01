@@ -1,0 +1,291 @@
+\documentclass[fleqn]{article}
+\usepackage[round,longnamesfirst]{natbib}
+\usepackage{graphicx,keyval,thumbpdf,url}
+
+\newcommand\R{{\mathbb{R}}}
+\newcommand{\pkg}[1]{{\normalfont\fontseries{b}\selectfont #1}}
+\newcommand{\sQuote}[1]{`{#1}'}
+\newcommand{\dQuote}[1]{``{#1}''}
+\let\code=\texttt
+\let\proglang=\textsf
+\newcommand{\file}[1]{\sQuote{\textsf{#1}}}
+\newcommand{\class}[1]{\code{"#1"}}
+
+\SweaveOpts{strip.white=true}
+
+\AtBeginDocument{\setkeys{Gin}{width=0.6\textwidth}}
+
+\date{\today}
+\title{Distributed Storage and Lists}
+\author{Stefan Theu\ss{}l}
+%% \VignetteIndexEntry{DSL}
+
+\sloppy{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+  Distributed lists are list-type objects where elements (i.e.,
+  arbitrary \proglang{R} objects) are stored in serialized form on a
+  distributed storage. The latter is often used in high performance
+  computing environments to process large quantities of data. First
+  proposed by Google, data located in such an environment is most
+  efficiently processed using the MapReduce programming model. The
+  \proglang{R} package~\pkg{DSL} provides an environment for creating
+  and handling of distributed lists. The package allows to make use of
+  different types of storage backends, in particular the Hadoop
+  Distributed File System. Furthermore, it offers functionality to
+  operate on such lists efficiently using the MapReduce programming
+  model.
+\end{abstract}
+
+<<init, echo=FALSE>>=
+options(width = 30)
+require("DSL")
+@ %
+
+\section{Introduction}
+\label{sec:introduction}
+
+\emph{Distributed lists} are list-type objects using a
+\emph{distributed storage} to store their elements. Typically,
+distributed lists are advantageous in environments where large
+quantities of data need to be processed at once since all data is
+stored out of the main memory which is often limited. Usually, a
+``distributed file system'' (DFS) can serve as a container to hold the
+data on a distributed storage. Such a container can hold arbitrary
+objects by serializing them to files.
+
+A recurrent function when computing on lists in
+\proglang{R}~\citep[][]{Rcore:2011} is \code{lapply()} and variants
+thereof. Conceptually, this is similar to a ``Map'' function from
+functional programming where a given (\proglang{R}) function is
+applied to each element of a vector (or in this case a
+list). Furthermore, another typical type of function often applied to
+lists is a function which combines contained elements. In functional
+programming this is called ``Reduce'' but variants thereof also exists
+in other areas (e.g., in the MPI standard, see
+\url{http://www.mpi-forum.org/docs/mpi22-report/node103.htm#Node103}).
+
+First proposed by Google the Map and Reduce functions are often
+sufficient to express many tasks for analyzing large data sets. They
+implement a framework which follows closely the MapReduce programming
+model~\citep[see][and
+\url{http://en.wikipedia.org/wiki/MapReduce}]{Dean+Ghemawat:2004}. It
+aims to support computation (i.e., map and reduction operations) on
+large data sets on clusters of workstations in a distributed
+manner. Provided each mapping operation is independent of the others,
+all maps can be performed in parallel. Hadoop
+(\url{http://hadoop.apache.org/}) is an open source variant of this
+framework.
+
+Package~\pkg{DSL} is an extension package for \proglang{R} for
+creating and handling list-type objects whose elements are stored
+using a distributed storage backend. For operating on such distributed
+lists efficiently the package offers methods and functions from the
+MapReduce programming model. In particular, \pkg{DSL} allows to make
+use of the Hadoop Distributed File System~\citep[HDFS,
+see][]{Borthakur:2010} and Hadoop Streaming (MapReduce) for storing
+and distributed processing of data. In
+Section~\ref{sec:design+implementation}, we describe the underlying
+data structures, and the MapReduce functionality.  Examples are
+discussed in Section~\ref{sec:examples}.
+Section~\ref{sec:conclusion+outlook} concludes the paper.
+
+
+\section{Design and Implementation}
+\label{sec:design+implementation}
+
+\subsection{Data Structures}
+
+\subsubsection{Distributed Storage}
+
+The S3 class \class{DStorage} defines a virtual storage where files
+are kept on a file system which possibly spans over several
+workstations. Data is distributed automatically among the these nodes
+when using such a file system. Objects of class \class{DStorage}
+``know'' how to use the corresponding file system by supplied accessor
+and modifier methods. The following file systems are supported to be
+use as distributed storage (DS):
+
+\begin{description}
+\item[\code{"LFS"}:] the local file system. This type uses function
+  and methods from the packages \pkg{base} and \pkg{utils} delivered
+  with the \proglang{R} distribution to handle files.
+\item[\code{"HDFS"}:] the Hadoop distributed file system. Functions and
+  Methods from package \pkg{hive} are used to interact with the
+  HDFS.
+\end{description}
+
+Essentially, such a class needs methods for reading and writing to the
+distributed storage (DS). Note however that files are typically
+organized according to a published standard. Thus, one should not
+write or modify arbitrary files or directories on such a file
+system. To account for this class \class{DStorage} specifies a
+directory \code{base\_dir} which can be modified freely but avoids
+that read/write operations can escape from that directory. The
+following (\pkg{DSL}-internal) methods are available for objects of
+class \class{DStorage}.
+
+\begin{itemize}
+\item \code{DS\_dir\_create()}
+\item \code{DS\_list\_directory()}
+\item \code{DS\_read\_lines()}
+\item \code{DS\_unlink()}
+\item \code{DS\_write\_lines()}
+\end{itemize}
+
+Depending on the type of storage suitable functions from different
+packages will be used to interact with the corresponding file system.
+
+The main reason of having such a virtual storage class in \proglang{R}
+is that it allows for easy extension of memory space in the
+\proglang{R} working environment. E.g., this storage can be used to
+store arbitrary (serialized) \proglang{R} objects. These objects are
+only loaded to the current working environment (.i.e., into RAM) when
+they are needed for computation. However, it is in most cases not a
+good idea to place many small files on file system due to efficiency
+reasons. Putting several serialized \proglang{R} objects into files of
+a certain maximum size (e.g., line by line as key/value pairs)
+circumvents this issue. Indeed, frameworks like Hadoop benefit from
+such a setup \citep[see Section \emph{Data
+  Organization} in][]{Borthakur:2010}. Thus, a constructor function must
+take the following arguments:
+\begin{description}
+\item[\code{type}:] the file system type,
+\item[\code{base\_dir}:] the directory under which chunks of
+  serialized objects are to be stored,
+\item[\code{chunksize}:], the maximal size of a single chunk.
+\end{description}
+
+E.g., a DS of \code{type} \code{"LFS"} using the system-wide or a
+user-defined \emph{temporary directory} as the base directory
+(\code{base\_dir}) and a chunk size of 10MB can be instanciated using
+the function \code{DStorage\_create()}:
+<<>>=
+ds <- DStorage_create( type = "LFS", base_dir = tempdir(), chunksize = 10 * 1024^2 )
+@
+
+Further methods to class \class{DStorage} are a corresponding
+\code{print()} and a \code{summary()} method.
+<<>>=
+ds
+summary(ds)
+@
+
+\subsubsection{Distributed Lists}
+
+For the purposes of a statistical analysis it is
+sufficient to use a \emph{temporary directory}, thus by default a directory generated
+using \code{tempdir()} is used as the base directory for storing
+objects of class \class{"DList"}.
+
+
+\subsection{Methods on Distributed Lists}
+
+The MapReduce programming model as defined
+by~\cite{Dean+Ghemawat:2004} is as follows. The computation takes a
+set of input key/value pairs, and produces a set of output key/value
+pairs. The user expresses the computation as two functions: Map and
+Reduce. The Map function takes an input pair and produces a set of
+intermediate key/value pairs. The Reduce function accepts an
+intermediate key and a set of values for that key (possibly grouped by
+the MapReduce library). It merges these values together to form a
+possibly smaller set of values. Typically, just zero or one output
+value is produced per reduce invocation. Furthermore, data is usually
+stored on a (distributed) file system which is recognized by the
+MapReduce library. This allows such a framework to handle lists of
+values (here objects of class \class{DList}) that are too large to fit
+in main memory (i.e., RAM).
+
+\begin{description}
+\item[\code{DGather}]
+\item[\code{DMap}]
+\item[\code{DReduce}]
+\end{description}
+
+\section{Examples}
+\label{sec:examples}
+
+
+\subsection{Word Count}
+
+This examples demonstrates how \code{Dmap()} and \code{DReduce()} can
+be used to count words based on text files located somewhere on a
+given file system. The following two files contained in the example
+directory of the package will be used.
+<<ex1_files>>=
+## simple wordcount based on two files:
+dir(system.file("examples", package = "DSL"))
+@
+We use a temporary directory as the base directory of a new \class{DStorage}
+object. By setting the maximum chunk size to 1 Byte we force the name
+of each file being placed in a separate chunk. Then we store the
+absolute path to the text files as elements of a \class{DList} object.
+<<ex1_stor>>=
+## first force 1 chunk per file (set max chunk size to 1 byte):
+ds <- DStorage_create("LFS", tempdir(), chunksize = 1L)
+## make "DList" from files, i.e., read contents and store in chunks
+dl <- as.DList(system.file("examples", package = "DSL"), DStorage = ds)
+@
+Data is read into chunks (one per original file) by using a simple
+call of \code{DMap()} on the distributed list.
+<<ex1_read>>=
+## read files
+dl <- DMap(dl, function( keypair ){
+    list( key = keypair$key, value = tryCatch(readLines(keypair$value),
+error = function(x) NA) )
+})
+@
+The contents of the files is split into words using the following call.
+<<>>=
+## split into terms
+splitwords <- function( keypair ){
+    keys <- unlist(strsplit(keypair$value, " "))
+    mapply( function(key, value) list( key = key, value = value), keys, rep(1L, length(keys)), SIMPLIFY = FALSE, USE.NAMES = FALSE)
+}
+res <- DMap( dl, splitwords )
+as.list(res)
+@
+Eventually, collected intermediate results are summed.
+<<>>=
+## now aggregate by term
+res <- DReduce( res, sum )
+as.list( res )
+@
+
+\subsection{Temperature}
+
+TODO: Example from Hadoop book. around 30 GB of raw data.
+
+\section{Conclusion and Outlook}
+\label{sec:conclusion+outlook}
+
+Package~\pkg{DSL} was designed to allow for handling of large data
+sets not fitting into main memory. The main data structure is the
+class \class{DList} which is a list-type object storing its elements
+on a virtual storage of class \class{DStorage}. The package currently
+provides basic data structures for creating and handling \class{DList}
+and \class{DStorage} objects, and facilities for computing on these,
+including map and reduction methods based on the MapReduce paradigm.
+
+Possible future extensions include:
+\begin{itemize}
+ \item \class{DStorage} interface to NoSQL database systems,
+ \item better integration of the \pkg{parallel} package. Currently
+   only the \emph{multicore} version of \code{lapply} is used for
+   \code{"LFS"} type \class{DStorage}.
+ \end{itemize}
+
+\subsubsection*{Acknowledgments}
+
+We are grateful to Christian Buchta for providing efficient C code for
+collecting partial results in \code{DReduce()}.
+
+{\small
+  \bibliographystyle{abbrvnat}
+  \bibliography{DSL}
+}
+
+\end{document}
