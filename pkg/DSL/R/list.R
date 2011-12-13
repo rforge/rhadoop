@@ -17,6 +17,10 @@ DList <- function( ... ){
     as.DList( args, DStorage = ds )
 }
 
+################################################################################
+## Coercing DList objects
+################################################################################
+
 as.DList <- function(x, DStorage = NULL, ...){
     UseMethod("as.DList")
 }
@@ -89,6 +93,15 @@ as.DList.list <- function(x, DStorage = NULL, ...){
                       storage = DStorage )
 }
 
+.DList <- function( x,  chunks, keys, mapping, storage ) {
+  attr( x, "Chunks" )             <- as.environment(chunks)
+  attr( x, "Keys" )               <- keys
+  attr( x, "Mapping" )            <- mapping
+  attr( x, "DStorage" ) <- storage
+  class( x )                      <- c( "DList", class(x) )
+  x
+}
+
 ## IDEA: as.DList.character creates a DList based on files in a directory (=character string) in a DFS
 as.DList.character <- function(x, DStorage = NULL, ...){
     if( is.null(DStorage) )
@@ -97,16 +110,6 @@ as.DList.character <- function(x, DStorage = NULL, ...){
     filelist <- as.list(file.path(x, keys))
     names(filelist) <- keys
     as.DList( filelist, DStorage = DStorage, ... )
-}
-
-.DList <- function( x,  chunks, keys,
-                                mapping, storage ) {
-  attr( x, "Chunks" )             <- as.environment(chunks)
-  attr( x, "Keys" )               <- keys
-  attr( x, "Mapping" )            <- mapping
-  attr( x, "DStorage" ) <- storage
-  class( x )                      <- c( "DList", class(x) )
-  x
 }
 
 .make_chunk_handler <- function(chunks, rev, storage){
@@ -130,7 +133,12 @@ as.DList.character <- function(x, DStorage = NULL, ...){
 is.DList <- function(x)
     inherits(x, "DList")
 
-## S3 Methods
+
+
+################################################################################
+## S3 Methods on 'DList' objects
+################################################################################
+
 print.DList <- function(x, ...) {
     cat(sprintf(ngettext(length(x),
                          "A DList with %d element\n",
@@ -154,12 +162,51 @@ names.DList <- function(x)
     ## TODO: what if there is more than 1 chunk
     mapping <- attr(x, "Mapping")[ i, ]
     ## when using accessor we always use first
-    line <- DS_read_lines( DStorage(x),
+    line <- DS_read_lines( DL_storage(x),
                            get( get("Revisions", envir = attr(x, "Chunks"))[1],
                                 envir = attr(x, "Chunks"))[ mapping["Chunk"] ]
                            ) [ mapping["Position"] ]
     DSL_unserialize_object( strsplit( line, "\t" )[[ 1 ]][ 2 ] )
 }
+
+
+
+################################################################################
+## 'DStorage' accessor and replacement functions for class "DList"
+################################################################################
+
+DL_storage <- function( x )
+  UseMethod("DL_storage")
+
+DL_storage.DStorage <- identity
+
+DL_storage.DList <- function( x )
+  attr(x, "DStorage")
+
+`DL_storage<-` <- function( x, value )
+  UseMethod("DL_storage<-")
+
+## FIXME
+`DL_storage<-.DList` <- function(x, value){
+    old_stor <- DL_storage(x)
+    if( inherits(old_stor, "LFS") && inherits(value, "HDFS") ){
+        if( !length(hive::DFS_list(DS_base_dir(value))) ){
+            for( rev in .revisions(x) )
+                hive::DFS_put( file.path(DS_base_dir(old_stor), rev),
+                              file.path(DS_base_dir(value), rev) )
+        }
+        else {
+            if( !.check_contents_of_storage(x, value) )
+                stop("HDFS storage already contains this directory with different data for the active revision")
+        }
+    } else {
+        stop("not implemented!")
+    }
+    attr(x, "DStorage") <- value
+    x
+}
+
+
 
 
 Keys <- function( x )

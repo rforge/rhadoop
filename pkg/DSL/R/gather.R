@@ -10,7 +10,7 @@ DGather <- function( x, keys = FALSE, n = -1L, names = TRUE ){
 
     out <- lapply(chunks,
                   function(f){
-                      lines <- DS_read_lines( DStorage(x),
+                      lines <- DS_read_lines( DL_storage(x),
                                      f )
                       ## note, the last line just contains information about the keys
                       neof <- grep("^<<EOF-", lines, invert = TRUE )

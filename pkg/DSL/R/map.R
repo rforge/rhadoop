@@ -32,9 +32,9 @@ DMap <- function( x, MAP, parallel, keep = FALSE ){
         parallel <- FALSE
     ## HDFS is always parallel since we cannot easily control parallel
     ## execution on Hadoop clusters
-    if( inherits(DStorage(x), "HDFS") )
+    if( inherits(DL_storage(x), "HDFS") )
         parallel <- TRUE
-    new_rev <- .DMap( DStorage(x), x = x, MAP = MAP, parallel = parallel )
+    new_rev <- .DMap( DL_storage(x), x = x, MAP = MAP, parallel = parallel )
 
     if( keep )
         #### FIXME: o currently this has some possibly unforeseen side effects
@@ -44,10 +44,10 @@ DMap <- function( x, MAP, parallel, keep = FALSE ){
         out <- .DList( list(),
                        .make_chunk_handler(file.path(new_rev, basename(.get_chunks( x ))),
                                            new_rev,
-                                           DStorage(x)),
+                                           DL_storage(x)),
                        attr( x, "Keys" ),
                        attr( x, "Mapping" ),
-                       DStorage( x )
+                       DL_storage( x )
                       )
     chunks <- DGather( out, keys = TRUE, names = FALSE )
     keys <- unlist( chunks )

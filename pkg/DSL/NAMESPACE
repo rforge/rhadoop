@@ -3,30 +3,30 @@
 ################################################################################
 
 ## collector in C-code
-useDynLib("DSL")
+useDynLib( "DSL" )
 
 ## DList constructor
-export("DList")
+export( "DList" )
 
 ## Generic functions
-export("as.DList")
+export( "as.DList" )
 
 ## Check for "DList" objects
-export("is.DList")
+export( "is.DList" )
 
 ## Methods on DList
-S3method("[[", "DList")
+S3method( "[[", "DList" )
 ##S3method("[[<-", "DList")
-S3method("length", "DList")
-S3method("names", "DList")
-S3method("names<-", "DList")
-S3method("print", "DList")
+S3method( "length", "DList" )
+S3method( "names", "DList" )
+S3method( "names<-", "DList" )
+S3method( "print", "DList" )
 
 ## DList coercion
-S3method("as.DList", "list")
-S3method("as.DList", "DList")
-S3method("as.DList", "character")
-S3method("as.list", "DList")
+S3method( "as.DList", "list" )
+S3method( "as.DList", "DList" )
+S3method( "as.DList", "character" )
+S3method( "as.list", "DList" )
 
 ################################################################################
 ## Key/value pairs
@@ -39,23 +39,29 @@ export( "DKeys" )
 ################################################################################
 
 ## Storage backend
-export( "DStorage_create",
-        "DStorage",
-        "DStorage<-",
+export( "DStorage",
         "is.DStorage" )
 
-S3method("DStorage", "DList")
-S3method("DStorage<-", "DList")
-S3method("DStorage", "DStorage")
-S3method("print", "DStorage")
-S3method("summary", "DStorage")
+S3method( "print", "DStorage" )
+S3method( "summary", "DStorage" )
 
 ################################################################################
 ## DList Operations
 ################################################################################
 
 # MapReduce, gather, and lapply functions
-export("DGather")
-export("DLapply")
-export("DMap")
-export("DReduce")
+export( "DGather" )
+export( "DLapply" )
+export( "DMap" )
+export( "DReduce" )
+
+################################################################################
+## DList Storage
+################################################################################
+
+export( "DL_storage",
+        "DL_storage<-" )
+
+S3method( "DL_storage",   "DList" )
+S3method( "DL_storage<-", "DList" )
+S3method( "DL_storage",   "DStorage" )

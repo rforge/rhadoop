@@ -45,8 +45,8 @@ DSL_get_text_mapping_from_revision <- function( x, rev = .revisions(x)[1] )
     revs <- .revisions( x )
     to_delete <- revs[! revs %in% value]
     for(rev in to_delete){
-        lapply(.get_chunks(x, rev), function(f) DS_unlink(DStorage(x), f))
-        DS_unlink(DStorage(x), rev)
+        lapply(.get_chunks(x, rev), function(f) DS_unlink(DL_storage(x), f))
+        DS_unlink(DL_storage(x), rev)
     }
     assign("Revisions", value, envir = attr( as.DList(x), "Chunks"))
     x

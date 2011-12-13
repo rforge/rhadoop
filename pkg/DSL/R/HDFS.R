@@ -16,7 +16,7 @@
 
     ## now handle part-xxxx stuff
     ## read all chunk signatures
-    .fix_chunknames( DStorage(x), rev )
+    .fix_chunknames( DL_storage(x), rev )
 
     rev
 }
@@ -33,7 +33,7 @@
 
     ## now handle part-xxxx stuff
     ## read all chunk signatures
-    .fix_chunknames( DStorage(x), rev )
+    .fix_chunknames( DL_storage(x), rev )
 
     rev
 }
@@ -203,13 +203,13 @@
 
     ## start the streaming job
     hive::hive_stream( MAP, REDUCE,
-                       input  = file.path(DStorage(x)$base_directory, .revisions(x)[1]),
-                       output = file.path(DStorage(x)$base_directory, rev),
+                       input  = file.path(DL_storage(x)$base_directory, .revisions(x)[1]),
+                       output = file.path(DL_storage(x)$base_directory, rev),
                        cmdenv_arg = cmdenv_arg,
                        streaming_args = streaming_args)
 
     ## in case the streaming job failed to create output directory return error
-    stopifnot( hive::DFS_dir_exists(file.path(DStorage(x)$base_directory, rev)) )
+    stopifnot( hive::DFS_dir_exists(file.path(DL_storage(x)$base_directory, rev)) )
 
     rev
 }

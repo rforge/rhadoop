@@ -14,8 +14,13 @@ DKeys( x )
   in chunks by \code{"\link{DList}"} objects.
 }
 \examples{
+## create a 2 elements DList
 dl <- DList( line1 = "This is the first line.",
              line2 = "Now, the second line." )
+## retrieve keys
 DKeys( dl )
+## remove DList and garbage collect it
+rm( dl )
+gc()
 }
 

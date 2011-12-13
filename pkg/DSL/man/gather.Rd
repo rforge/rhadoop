@@ -35,5 +35,8 @@ dl <- DList( line1 = "This is the first line.",
 DGather( dl )
 ## retrieve keys
 unlist(DGather( dl, keys = TRUE, names = FALSE ))
+## remove DList and garbage collect it
+rm( dl )
+gc()
 }
 

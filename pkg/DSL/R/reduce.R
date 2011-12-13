@@ -13,21 +13,21 @@ DReduce <- function( x, REDUCE = identity, parallel, ... ){
         parallel <- FALSE
     ## HDFS is always parallel since we cannot easily control parallel
     ## execution on Hadoop clusters
-    if( inherits(DStorage(x), "HDFS") )
+    if( inherits(DL_storage(x), "HDFS") )
         parallel <- TRUE
 
-    new_rev <- .DReduce( DStorage(x), x = x, REDUCE = REDUCE, parallel = parallel, ... )
+    new_rev <- .DReduce( DL_storage(x), x = x, REDUCE = REDUCE, parallel = parallel, ... )
 
     ## there are possibly fewer chunks after reduce (check for them)
     cn <- basename(.get_chunks(x))
-    chunks <- cn[cn %in% DS_list_directory(DStorage(x), new_rev)]
+    chunks <- cn[cn %in% DS_list_directory(DL_storage(x), new_rev)]
     out <- .DList( list(),
                   .make_chunk_handler(file.path(new_rev, chunks),
                                       new_rev,
-                                      DStorage(x)),
+                                      DL_storage(x)),
                   attr( x, "Keys" ),
                   attr( x, "Mapping" ),
-                  DStorage( x )
+                  DL_storage( x )
                   )
     gathered <- DGather( out, keys = TRUE, names = FALSE )
     keys <- unlist( gathered )

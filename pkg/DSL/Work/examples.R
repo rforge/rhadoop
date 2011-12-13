@@ -20,7 +20,7 @@ names(dl) <- c("c", "d")
 summary( dl )
 
 ## test garbage collection/finalizer
-base_dir <- DSL:::DS_base_dir(DStorage(dl))
+base_dir <- DSL:::DS_base_dir(DL_storage(dl))
 d <- dir(base_dir)
 d
 DSL:::.revisions(dl)
@@ -78,7 +78,7 @@ stopifnot( identical(lm, as.list(dlmp)) )
 require("DSL")
 
 ## first create HDFS storage
-ds <- DStorage_create("HDFS", tempdir())
+ds <- DStorage("HDFS", tempdir())
 ds
 
 ## test construction/access
@@ -90,18 +90,18 @@ dl[[2]]
 names(dl)
 names(dl) <- c("c", "d")
 summary( dl )
-DStorage( dl )
+DL_storage( dl )
 
 ## test garbage collection/finalizer
-base_dir <- DSL:::DS_base_dir(DStorage(dl))
-d <- DStorage(dl)$list_directory(base_dir)
+base_dir <- DSL:::DS_base_dir(DL_storage(dl))
+d <- DL_storage(dl)$list_directory(base_dir)
 d
 DSL:::.revisions(dl)
-DStorage(dl)$list_directory(file.path(base_dir, d))
+DL_storage(dl)$list_directory(file.path(base_dir, d))
 rm(dl)
 gc()
-stopifnot(length(DStorage(ds)$list_directory(file.path(base_dir, d))) == 0)
-stopifnot(length(DStorage(ds)$list_directory(base_dir)) == 0)
+stopifnot(length(DL_storage(ds)$list_directory(file.path(base_dir, d))) == 0)
+stopifnot(length(DL_storage(ds)$list_directory(base_dir)) == 0)
 
 ## test distribute/gather
 l2 <- list( a = "muh", b = 1:100 )
@@ -167,11 +167,45 @@ DKeys( res )
 out <- DReduce( res, sum )
 as.list(out)
 
-
-## Does not work since stupid Hadoop writes the chunk information to a
-## separate file ...
-ds <- DStorage_create("HDFS", tempdir())
+ds <- DStorage("HDFS", tempdir())
 dl <- as.DList( l, DStorage = ds )
 res <- DMap( dl, splitwords )
 out <- DReduce( res, REDUCE = sum )
 as.list(out)
+
+## DL_Storage replacement test
+
+l <- list( line1 = "This is the first line.", line2 = "Now, the second line." )
+dl <- as.DList( l )
+
+ds <- DStorage("HDFS", tempdir())
+
+DL_storage(dl) <- ds
+
+## get/put objects
+## lm example to create object
+ctl <- c(4.17,5.58,5.18,6.11,4.50,4.61,5.17,4.53,5.33,5.14)
+trt <- c(4.81,4.17,4.41,3.59,5.87,3.83,6.03,4.89,4.32,4.69)
+group <- gl(2,10,20, labels=c("Ctl","Trt"))
+weight <- c(ctl, trt)
+lm.D9 <- lm(weight ~ group)
+
+## LFS
+ds <- DStorage("LFS", tempdir())
+
+file <- "lm.D9"
+
+DSL:::DS_put(ds, lm.D9, file)
+DSL:::DS_list_directory( ds )
+
+DSL:::DS_get(ds, file)
+
+## HDFS
+ds <- DStorage("HDFS", tempdir())
+
+file <- "lm.D9"
+
+DSL:::DS_put(ds, lm.D9, file)
+DSL:::DS_list_directory( ds )
+
+DSL:::DS_get(ds, file)

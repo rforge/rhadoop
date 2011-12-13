@@ -11,9 +11,9 @@
 ## DStorage (DS) high level constructor
 ################################################################################
 
-DStorage_create <- function( type = c("LFS", "HDFS"),
-                             base_dir,
-                             chunksize = 1024^2 ){
+DStorage <- function( type = c("LFS", "HDFS"),
+                      base_dir,
+                      chunksize = 1024^2 ){
     type <- match.arg( type )
     .DS_init( switch(type,
                      "LFS"  = .make_LFS_storage(base_dir, chunksize),
@@ -34,19 +34,23 @@ DS_default <- function(){
 ################################################################################
 
 .DStorage <- function( type,
-                                 base_directory,
-                                 chunksize,
-                                 dir_create,
-                                 fetch_last_line,
-                                 list_directory,
-                                 read_lines,
-                                 unlink,
-                                 write_lines){
+                       base_directory,
+                       chunksize,
+                       dir_create,
+                       fetch_last_line,
+                       get,
+                       list_directory,
+                       put,
+                       read_lines,
+                       unlink,
+                       write_lines ){
     structure( list(base_directory = base_directory,
                     chunksize = chunksize,
                     dir_create = dir_create,
+                    get = get,
                     fetch_last_line = fetch_last_line,
                     list_directory = list_directory,
+                    put = put,
                     read_lines = read_lines,
                     unlink = unlink,
                     write_lines = write_lines),
@@ -59,7 +63,15 @@ DS_default <- function(){
                chunksize       = chunksize,
                dir_create      = function(x) base::dir.create(x, showWarnings = FALSE),
                fetch_last_line = function(x) utils::tail(base::readLines(as.character(x)), n = 1L),
+               get             = function(x) {con <- file(x, open = "r")
+                                              obj <- unserialize(con)
+                                              close.connection(con)
+                                              obj},
                list_directory  = base::dir,
+               put             = function( obj, x ) {con <- file( x, open = "w" )
+                                                     serialize( obj, con )
+                                                     close.connection(con)
+                                                 },
                read_lines      = function(x) base::readLines(as.character(x)),
                unlink          = function(x) DSL:::LFS_remove(x),
                write_lines     = function(text, fil) base::writeLines(text, con = as.character(fil)), ...
@@ -72,7 +84,9 @@ DS_default <- function(){
                chunksize       = chunksize,
                dir_create      = function(x) hive::DFS_dir_create(x, henv = hive::hive()),
                fetch_last_line = function(x) hive::DFS_tail(n = 1L, as.character(x), henv = hive::hive()),
+               get             = function(x) hive::DFS_get_object(as.character(x), henv = hive::hive()),
                list_directory  = function(x) hive::DFS_list(x, henv = hive::hive()),
+               put             = function(obj, x) hive::DFS_put_object(obj, as.character(x), henv = hive::hive()),
                read_lines      = function(x) hive::DFS_read_lines(as.character(x), henv = hive::hive()),
                unlink          = function(x) hive::DFS_delete(x, recursive = TRUE, henv = hive::hive()),
                write_lines     = function(text, fil) hive::DFS_write_lines(text, as.character(fil), henv = hive::hive()), ...
@@ -104,41 +118,6 @@ summary.DStorage <- function( object, ... ){
                         paste( names(object)[!(names(object)
                                                 %in% c("description", "chunksize", "base_directory"))],
                               collapse = ", ")))
-}
-
-################################################################################
-## DStorage accessor and replacement functions for class "DCorpus"
-################################################################################
-
-DStorage <- function( x )
-  UseMethod("DStorage")
-
-DStorage.DStorage <- identity
-
-DStorage.DList <- function( x )
-  attr(x, "DStorage")
-
-`DStorage<-` <- function( x, value )
-  UseMethod("DStorage<-")
-
-## FIXME
-`DStorage<-.DList` <- function(x, value){
-    old_stor <- DStorage(x)
-    if( inherits(old_stor, "LFS") && inherits(value, "HDFS") ){
-        if( !length(hive::DFS_list(DS_base_dir(value))) ){
-            for( rev in .revisions(x) )
-                hive::DFS_put( file.path(DS_base_dir(old_stor), rev),
-                              file.path(DS_base_dir(value), rev) )
-        }
-        else {
-            if( !.check_contents_of_storage(x, value) )
-                stop("HDFS storage already contains this directory with different data for the active revision")
-        }
-    } else {
-        stop("not implemented!")
-    }
-    attr(x, "DStorage") <- value
-    x
 }
 
 ################################################################################
@@ -185,6 +164,18 @@ DS_dir_create <- function( storage, dir ){
     storage$dir_create( dir )
 }
 
+
+DS_fetch_last_line <- function( storage, file ){
+    stopifnot( is.DStorage(storage) )
+    file <- sub("/./", "", file.path(DS_base_dir(storage), file ))
+    storage$fetch_last_line( file )
+}
+
+DS_get <-function( storage, x ){
+    stopifnot( is.DStorage(storage) )
+    storage$get( file.path(DS_base_dir(storage), x) )
+}
+
 DS_list_directory <- function( storage, dir = "." ){
     stopifnot( is.DStorage(storage) )
     if( dir == "." )
@@ -192,10 +183,9 @@ DS_list_directory <- function( storage, dir = "." ){
     storage$list_directory( file.path(DS_base_dir(storage), dir ) )
 }
 
-DS_fetch_last_line <- function( storage, file ){
+DS_put <-function( storage, obj, x ){
     stopifnot( is.DStorage(storage) )
-    file <- sub("/./", "", file.path(DS_base_dir(storage), file ))
-    storage$fetch_last_line( file )
+    storage$put( obj, file.path(DS_base_dir(storage), x) )
 }
 
 DS_read_lines <- function( storage, file ){

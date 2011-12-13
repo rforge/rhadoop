@@ -41,7 +41,7 @@
 \end{abstract}
 
 <<init, echo=FALSE>>=
-options(width = 30)
+options(width = 25)
 require("DSL")
 @ %
 
@@ -72,11 +72,14 @@ First proposed by Google the Map and Reduce functions are often
 sufficient to express many tasks for analyzing large data sets. They
 implement a framework which follows closely the MapReduce programming
 model~\citep[see][and
-\url{http://en.wikipedia.org/wiki/MapReduce}]{Dean+Ghemawat:2004}. It
-aims to support computation (i.e., map and reduction operations) on
-large data sets on clusters of workstations in a distributed
-manner. Provided each mapping operation is independent of the others,
-all maps can be performed in parallel. Hadoop
+\url{http://en.wikipedia.org/wiki/MapReduce}]{Dean+Ghemawat:2004}. Note
+however, that as pointed out e.g., in~\cite{Laemmel:2007} Map and
+Reduce operations in the MapReduce programming model do not
+necessarily follow the definition from functional programming.  It
+rather aims to support computation (i.e., map and reduction
+operations) on large data sets on clusters of workstations in a
+distributed manner. Provided each mapping operation is independent of
+the others, all maps can be performed in parallel. Hadoop
 (\url{http://hadoop.apache.org/}) is an open source variant of this
 framework.
 
@@ -103,26 +106,27 @@ Section~\ref{sec:conclusion+outlook} concludes the paper.
 
 The S3 class \class{DStorage} defines a virtual storage where files
 are kept on a file system which possibly spans over several
-workstations. Data is distributed automatically among the these nodes
+workstations. Data is distributed automatically among these nodes
 when using such a file system. Objects of class \class{DStorage}
 ``know'' how to use the corresponding file system by supplied accessor
 and modifier methods. The following file systems are supported to be
-use as distributed storage (DS):
+used as distributed storage (DS):
 
 \begin{description}
-\item[\code{"LFS"}:] the local file system. This type uses function
+\item[\code{"LFS"}:] the local file system. This type uses functions
   and methods from the packages \pkg{base} and \pkg{utils} delivered
   with the \proglang{R} distribution to handle files.
-\item[\code{"HDFS"}:] the Hadoop distributed file system. Functions and
-  Methods from package \pkg{hive} are used to interact with the
-  HDFS.
+\item[\code{"HDFS"}:] the Hadoop distributed file system. Functions
+  and Methods from package
+  \pkg{hive}~\citep[][]{Theussl+Feinerer:2011} are used to interact
+  with the HDFS.
 \end{description}
 
 Essentially, such a class needs methods for reading and writing to the
 distributed storage (DS). Note however that files are typically
 organized according to a published standard. Thus, one should not
 write or modify arbitrary files or directories on such a file
-system. To account for this class \class{DStorage} specifies a
+system. To account for this, class \class{DStorage} specifies a
 directory \code{base\_dir} which can be modified freely but avoids
 that read/write operations can escape from that directory. The
 following (\pkg{DSL}-internal) methods are available for objects of
@@ -130,59 +134,128 @@ class \class{DStorage}.
 
 \begin{itemize}
 \item \code{DS\_dir\_create()}
+\item \code{DS\_get()}
 \item \code{DS\_list\_directory()}
+\item \code{DS\_put()}
 \item \code{DS\_read\_lines()}
 \item \code{DS\_unlink()}
 \item \code{DS\_write\_lines()}
 \end{itemize}
 
 Depending on the type of storage suitable functions from different
-packages will be used to interact with the corresponding file system.
+packages will be used to interact with the corresponding file
+system. Whereas \code{DS\_dir\_create()},
+\code{DS\_list\_directory()}, \code{DS\_read\_lines()},
+\code{DS\_unlink()}, and \code{DS\_write\_lines()} mimic the behavior
+of corresponding functions of package \pkg{base} (\code{dir.create()},
+\code{dir()}, \code{readLines}, \code{unlink()}, and
+\code{writeLines()}, respectively), functions \code{DS\_get()} and
+\code{DS\_put()} can be used to read/write \proglang{R} objects from/to
+disk.
 
 The main reason of having such a virtual storage class in \proglang{R}
 is that it allows for easy extension of memory space in the
 \proglang{R} working environment. E.g., this storage can be used to
 store arbitrary (serialized) \proglang{R} objects. These objects are
-only loaded to the current working environment (.i.e., into RAM) when
+only loaded to the current working environment (i.e., into RAM) when
 they are needed for computation. However, it is in most cases not a
-good idea to place many small files on file system due to efficiency
-reasons. Putting several serialized \proglang{R} objects into files of
-a certain maximum size (e.g., line by line as key/value pairs)
-circumvents this issue. Indeed, frameworks like Hadoop benefit from
-such a setup \citep[see Section \emph{Data
-  Organization} in][]{Borthakur:2010}. Thus, a constructor function must
-take the following arguments:
+good idea to place many small files on such a file system due to
+efficiency reasons. Putting several serialized \proglang{R} objects
+into files of a certain maximum size (e.g., line by line as key/value
+pairs) circumvents this issue. Indeed, frameworks like Hadoop benefit
+from such a setup \citep[see Section \emph{Data Organization}
+in][]{Borthakur:2010}. Thus, a constructor function must take the
+following arguments:
 \begin{description}
 \item[\code{type}:] the file system type,
 \item[\code{base\_dir}:] the directory under which chunks of
   serialized objects are to be stored,
-\item[\code{chunksize}:], the maximal size of a single chunk.
+\item[\code{chunksize}:] the maximal size of a single chunk.
 \end{description}
 
 E.g., a DS of \code{type} \code{"LFS"} using the system-wide or a
 user-defined \emph{temporary directory} as the base directory
 (\code{base\_dir}) and a chunk size of 10MB can be instanciated using
-the function \code{DStorage\_create()}:
-<<>>=
-ds <- DStorage_create( type = "LFS", base_dir = tempdir(), chunksize = 10 * 1024^2 )
+the function \code{DStorage()}:
+<<ds_create>>=
+ds <- DStorage( type = "LFS", base_dir = tempdir(), chunksize = 10 * 1024^2 )
 @
 
 Further methods to class \class{DStorage} are a corresponding
 \code{print()} and a \code{summary()} method.
-<<>>=
+<<ds_print_summary>>=
 ds
 summary(ds)
 @
 
 \subsubsection{Distributed Lists}
 
-For the purposes of a statistical analysis it is
-sufficient to use a \emph{temporary directory}, thus by default a directory generated
-using \code{tempdir()} is used as the base directory for storing
-objects of class \class{"DList"}.
+Distributed lists are defined in \proglang{R} by the S3 class
+\class{DList}. Objects of this class behave similar to standard
+\proglang{R} lists but use a distributed storage of class
+\class{DStorage} to store their elements. Distributed lists can be
+easily constructed using the function \code{DList()} or can be coerced
+using the generic function \code{as.DList()}. Available methods
+support coercion of \proglang{R} lists and character vectors
+representing paths to data repositories as well as coercion of
+\class{DList} objects to lists.
+
+<<dl_create>>=
+dl <- DList( letters = letters, numbers = 0:9  )
+l <- as.list( letters )
+names(l) <- LETTERS
+dl2 <- as.DList(l)
+identical( as.list(dl2), l )
+dl3 <- as.DList( system.file("examples", package = "DSL") )
+@
+
+Note that the above example uses a default storage type, namely
+\code{"LFS"} using a \emph{temporary directory} generated with
+\code{tempdir()} as the base directory. In order to set a user defined
+storage the \code{DStorage} argument to the \code{DList()}
+constructor is used.
+
+<<dl_create2>>=
+dl <- DList( letters = letters, numbers = 0:9, DStorage = ds )
+@
+
+Conceptually we want a distributed list to support a set
+of intuitive operations, like accessing each element (stored somewhere
+on a DFS) in a direct way,
+displaying the distributed list and each individual
+element, obtaining information about basic properties (e.g., the
+length of the list), or applying some operation on a
+range of elements. These requirements are formalized via a set of
+interfaces which must be implemented by the \class{DList} class:
+\begin{description}
+\item[Display] Since elements of the list are not directly available
+  the \code{print} and \code{summary} methods should provide other
+  useful information about the distributed list (like the number of
+  list elements).
+\item[Length] The \code{length()} function must return the number of
+  list elements.
+\item[Names] Named list must be supported.
+\item[Subset] The \code{[[}%]]
+  \ operator must be implemented so that individual elements of the
+  distributed list can be retrieved.
+\item[MapReduce] Map and Reduce operations as well as variants of
+  \code{lapply} (which are conceptually similar to Map) can be used to
+  express most of the computation on \class{DList} objects.
+\end{description}
+
+<<dl_methods>>=
+dl
+summary(dl)
+names( dl2 )
+length(dl3)
+dl3[[1]]
+@
+
+MapReduce is discussed in more detail in the next section.
 
 
 \subsection{Methods on Distributed Lists}
+\label{sec:methods}
 
 The MapReduce programming model as defined
 by~\cite{Dean+Ghemawat:2004} is as follows. The computation takes a
@@ -200,14 +273,72 @@ values (here objects of class \class{DList}) that are too large to fit
 in main memory (i.e., RAM).
 
 \begin{description}
-\item[\code{DGather}]
-\item[\code{DMap}]
-\item[\code{DReduce}]
+\item[\code{DGather}:] this collective operation is similar to an
+  MPI\_GATHER
+  (\url{http://www.mpi-forum.org/docs/mpi22-report/node95.htm#Node95}). However,
+  instead of collecting results from processes running in parallel,
+  \code{DGather()} collects the contents of chunks holding the
+  elements of a \class{DList}. By default a named list of length the
+  number of chunks is to be returned. Its elements are character
+  vectors of values from key/value pairs stored in chunks read line by
+  line from the corresponding chunk. Alternatively, \code{DGather()}
+  can be used to retrieve the keys only.
+\item[\code{DLapply}:] is an (l)apply-type function which is used to
+  iteratively \emph{apply} a function to a set of input values. In
+  case of \code{DLapply()} input values are elements of \class{DList}
+  objects (i.e., the value of a key/value pair). A distributed list of
+  the same length is to be returned.
+\item[\code{DMap}:] is similar to \code{DLapply()} above but always
+  takes both the key and the value from a key/value pair as
+  input. Thus, keys can also be modified. Indeed, the returned object
+  can differ in length from the original as opposed to when using
+  \code{DLapply}.
+\item[\code{DReduce}:] this collective operation takes a set of
+  (intermediate) key/value pairs and combines
+  values with the same associated key using a given directive (the
+  reduce function). By default values are concatinated using the
+  \code{c()} operator.
 \end{description}
+
+<<dl_mapreduce>>=
+dl <- DList( line1 = "This is the first line.",
+             line2 = "Now, the second line." )
+res <- DLapply( dl, function(x) unlist(strsplit(x, " ")) )
+as.list( res )
+
+foo <- function( keypair )
+    list( key = paste("next_", keypair$key, sep = ""), value =
+         gsub("first", "mapped", keypair$value) )
+
+dlm <- DMap( x = dl, MAP = foo)
+## retrieve keys
+unlist(DGather(dlm, keys = TRUE, names = FALSE))
+## retrieve values
+as.list( dlm )
+@
+
+Further methods on \class{DList} objects are prefixed with
+\code{DL\_}. Currently, only methods for interacting with
+the underlying \class{DStorage}  are available.
+
+\begin{description}
+\item[\code{DL\_storage}:] accesses the storage of \class{DList}
+  objects. Returns objects of class \class{DStorage}.
+\item[\code{DL\_storage<-}:] replaces the storage  in \class{DList}
+  objects. Data is automatically transferred to the new storage.
+\end{description}
+
+<<dl_stor_replace>>=
+l <- list( line1 = "This is the first line.", line2 = "Now, the second line." )
+dl <- as.DList( l )
+DL_storage(dl)
+ds <- DStorage("HDFS", tempdir())
+DL_storage(dl) <- ds
+as.list(dl)
+@
 
 \section{Examples}
 \label{sec:examples}
-
 
 \subsection{Word Count}
 
@@ -225,7 +356,7 @@ of each file being placed in a separate chunk. Then we store the
 absolute path to the text files as elements of a \class{DList} object.
 <<ex1_stor>>=
 ## first force 1 chunk per file (set max chunk size to 1 byte):
-ds <- DStorage_create("LFS", tempdir(), chunksize = 1L)
+ds <- DStorage("LFS", tempdir(), chunksize = 1L)
 ## make "DList" from files, i.e., read contents and store in chunks
 dl <- as.DList(system.file("examples", package = "DSL"), DStorage = ds)
 @
@@ -239,7 +370,7 @@ error = function(x) NA) )
 })
 @
 The contents of the files is split into words using the following call.
-<<>>=
+<<ex1_map>>=
 ## split into terms
 splitwords <- function( keypair ){
     keys <- unlist(strsplit(keypair$value, " "))
@@ -249,15 +380,18 @@ res <- DMap( dl, splitwords )
 as.list(res)
 @
 Eventually, collected intermediate results are summed.
-<<>>=
+<<ex1_reduce>>=
 ## now aggregate by term
 res <- DReduce( res, sum )
 as.list( res )
 @
 
+
 \subsection{Temperature}
 
 TODO: Example from Hadoop book. around 30 GB of raw data.
+
+
 
 \section{Conclusion and Outlook}
 \label{sec:conclusion+outlook}
@@ -280,8 +414,8 @@ Possible future extensions include:
 
 \subsubsection*{Acknowledgments}
 
-We are grateful to Christian Buchta for providing efficient C code for
-collecting partial results in \code{DReduce()}.
+We are grateful to Christian Buchta for providing efficient
+\proglang{C} code for collecting partial results in \code{DReduce()}.
 
 {\small
   \bibliographystyle{abbrvnat}

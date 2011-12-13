@@ -61,7 +61,7 @@ as.list( dlm )
 ## simple wordcount based on two files:
 dir(system.file("examples", package = "DSL"))
 ## first force 1 chunk per file (set max chunk size to 1 byte):
-ds <- DStorage_create("LFS", tempdir(), chunksize = 1L)
+ds <- DStorage("LFS", tempdir(), chunksize = 1L)
 ## make "DList" from files, i.e., read contents and store in chunks
 dl <- as.DList(system.file("examples", package = "DSL"), DStorage = ds)
 ## read files
