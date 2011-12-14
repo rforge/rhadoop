@@ -41,7 +41,7 @@
 \end{abstract}
 
 <<init, echo=FALSE>>=
-options(width = 25)
+options(width = 60)
 require("DSL")
 @ %
 
@@ -178,7 +178,8 @@ user-defined \emph{temporary directory} as the base directory
 (\code{base\_dir}) and a chunk size of 10MB can be instanciated using
 the function \code{DStorage()}:
 <<ds_create>>=
-ds <- DStorage( type = "LFS", base_dir = tempdir(), chunksize = 10 * 1024^2 )
+ds <- DStorage( type = "LFS", base_dir = tempdir(),
+                chunksize = 10 * 1024^2 )
 @
 
 Further methods to class \class{DStorage} are a corresponding
@@ -329,7 +330,8 @@ the underlying \class{DStorage}  are available.
 \end{description}
 
 <<dl_stor_replace>>=
-l <- list( line1 = "This is the first line.", line2 = "Now, the second line." )
+l <- list( line1 = "This is the first line.",
+           line2 = "Now, the second line." )
 dl <- as.DList( l )
 DL_storage(dl)
 ds <- DStorage("HDFS", tempdir())
@@ -357,16 +359,18 @@ absolute path to the text files as elements of a \class{DList} object.
 <<ex1_stor>>=
 ## first force 1 chunk per file (set max chunk size to 1 byte):
 ds <- DStorage("LFS", tempdir(), chunksize = 1L)
-## make "DList" from files, i.e., read contents and store in chunks
-dl <- as.DList(system.file("examples", package = "DSL"), DStorage = ds)
+## make "DList", i.e., read file contents and store in chunks
+dl <- as.DList( system.file("examples", package = "DSL"),
+                DStorage = ds )
 @
 Data is read into chunks (one per original file) by using a simple
 call of \code{DMap()} on the distributed list.
 <<ex1_read>>=
 ## read files
 dl <- DMap(dl, function( keypair ){
-    list( key = keypair$key, value = tryCatch(readLines(keypair$value),
-error = function(x) NA) )
+    list( key = keypair$key,
+          value = tryCatch(readLines(keypair$value),
+                           error = function(x) NA) )
 })
 @
 The contents of the files is split into words using the following call.
@@ -374,7 +378,9 @@ The contents of the files is split into words using the following call.
 ## split into terms
 splitwords <- function( keypair ){
     keys <- unlist(strsplit(keypair$value, " "))
-    mapply( function(key, value) list( key = key, value = value), keys, rep(1L, length(keys)), SIMPLIFY = FALSE, USE.NAMES = FALSE)
+    mapply( function(key, value) list( key = key, value = value),
+            keys, rep(1L, length(keys)),
+            SIMPLIFY = FALSE, USE.NAMES = FALSE )
 }
 res <- DMap( dl, splitwords )
 as.list(res)

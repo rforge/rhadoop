@@ -47,8 +47,8 @@ DS_default <- function(){
     structure( list(base_directory = base_directory,
                     chunksize = chunksize,
                     dir_create = dir_create,
-                    get = get,
                     fetch_last_line = fetch_last_line,
+                    get = get,
                     list_directory = list_directory,
                     put = put,
                     read_lines = read_lines,
@@ -114,10 +114,11 @@ print.DStorage <- function( x, ... ){
 
 summary.DStorage <- function( object, ... ){
     print( object )
-    writeLines( sprintf("- Registered methods: %s",
-                        paste( names(object)[!(names(object)
-                                                %in% c("description", "chunksize", "base_directory"))],
-                              collapse = ", ")))
+    meths <- names(object)[!(names(object) %in% c("description", "chunksize", "base_directory"))]
+    lenpermeth <- ceiling(length(meths)/2)
+    writeLines( sprintf("- Registered methods:\n  %s\n  %s",
+                        paste(meths[1:lenpermeth], collapse = ", "),
+                        paste(meths[(lenpermeth+1):length(meths)], collapse = ", ")) )
 }
 
 ################################################################################
