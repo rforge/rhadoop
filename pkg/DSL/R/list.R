@@ -190,7 +190,7 @@ DL_storage.DList <- function( x )
 `DL_storage<-.DList` <- function(x, value){
     old_stor <- DL_storage(x)
     if( inherits(old_stor, "LFS") && inherits(value, "HDFS") ){
-        if( !length(hive::DFS_list(DS_base_dir(value))) ){
+        if( !length(hive::DFS_list(file.path(DS_base_dir(value), .revisions(x)[1]))) ){
             for( rev in .revisions(x) )
                 hive::DFS_put( file.path(DS_base_dir(old_stor), rev),
                               file.path(DS_base_dir(value), rev) )

@@ -129,9 +129,11 @@ summary.DStorage <- function( object, ... ){
 ## checks if all chunks are already in place
 ## FIXME: we need to provide some checksums here
 .check_contents_of_storage <- function(x, value){
-    all( attr(x, "Chunks")[[ attr(x, "ActiveRevision") ]] %in%
-        DS_list_directory( value, attr(x, "ActiveRevision")) )
+    all( basename(.get_chunks_from_current_revision(x))	 %in%
+        DS_list_directory(value, .revisions(x)[1]) )
 }
+
+
 
 .DS_empty <- function(){
     NA
