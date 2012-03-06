@@ -1,9 +1,14 @@
 ## Authors: Ingo Feinerer, Stefan Theussl
 
 ## "DCorpus" class
-.DCorpus <- function( x, active_revision, cmeta, dmeta ) {
+.DCorpus <- function( x, keep, cmeta, dmeta ) {
   attr( x, "CMetaData" )      <- cmeta
   attr( x, "DMetaData" )      <- dmeta
+  ## use revisions? Default: TRUE. This can be turned off using
+  ## setRevision() replacement function.
+  if( missing(keep) )
+      keep <- TRUE
+  attr( x, "keep" )           <- keep
   class( x )                  <- c( "DCorpus", "DList", "Corpus", "list" )
   x
 }
@@ -12,10 +17,11 @@ DistributedCorpus <-
 DCorpus <- function( x,
                     readerControl = list(reader   = x$DefaultReader,
                     language = "eng"),
-                    storage = NULL, keys = NULL, ... ) {
+                    storage = NULL, keep = TRUE, ... ) {
     ## For the moment we
     ##   - only support a directory as source (DirSource)
     ## TODO: add DList source
+    ## FIXME: in earlier versions DCorpus had a keys argument for supplying user chosen keys
     if( !inherits(x, "DirSource") )
             stop("unsupported source type (use DirSource instead)")
 
@@ -38,7 +44,7 @@ DCorpus <- function( x,
 
     names(tdl) <- x$Names
     df <- data.frame(MetaID = rep(0, length(tdl)), stringsAsFactors = FALSE)
-    .DCorpus( tdl, DSL:::.revisions(tdl)[1], tm:::.MetaDataNode(), df )
+    .DCorpus( tdl, keep, tm:::.MetaDataNode(), df )
 }
 
 
@@ -60,7 +66,7 @@ as.DCorpus.DCorpus <- function(x, storage = NULL, ...){
 as.DCorpus.Corpus <- function(x, storage = NULL, ...){
     dl <- as.DList(x, DStorage = storage, ...)
     .DCorpus( dl,
-              active_revision = DSL:::.revisions(dl)[1],
+              keep = TRUE,
               cmeta = CMetaData(x),
               dmeta = DMetaData(x) )
 }
@@ -99,6 +105,16 @@ setRevision <- function( corpus, revision ){
         warning( "invalid revision" )
     DSL:::.revisions( corpus ) <- c( revision, getRevisions(corpus)[!pos] )
     invisible(corpus)
+}
+
+## the setRevision replacement function is used to turn revisions on and off
+keepRevisions <- function( corpus )
+    attr( corpus, "keep" )
+
+`keepRevisions<-` <- function( corpus, value ){
+    stopifnot( length(value) == 1L )
+    stopifnot( is.logical(value) )
+    attr(corpus, "keep") <- value
 }
 
 ## remove a given revision

@@ -7,8 +7,10 @@ export("DCorpus", "DistributedCorpus")
 
 ## Revisions
 export("getRevisions")
-export("setRevision")
+export("keepRevisions")
+export("keepRevisions<-")
 export("removeRevision")
+export("setRevision")
 
 ## Generic functions
 export("as.DCorpus", "as.DistributedCorpus")

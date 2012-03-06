@@ -7,5 +7,5 @@ Description: A plug-in for the text mining framework tm to support text mining
              handling distributed corpus objects based on distributed list objects.
 Authors@R: c(person("Ingo", "Feinerer", role = "aut"), person("Stefan", "Theussl", role = c("aut", "cre"), email = "Stefan.Theussl@wu.ac.at"))
 License: GPL-3
-Depends: DSL, tm (>= 0.5-6.10)
+Depends: DSL (>= 0.1-1), tm (>= 0.5-6.10)
 Imports: slam (>= 0.1-22)
