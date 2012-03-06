@@ -329,7 +329,7 @@ the underlying \class{DStorage}  are available.
   objects. Data is automatically transferred to the new storage.
 \end{description}
 
-<<dl_stor_replace>>=
+<<dl_stor_replace, eval = FALSE>>=
 l <- list( line1 = "This is the first line.",
            line2 = "Now, the second line." )
 dl <- as.DList( l )
@@ -393,48 +393,48 @@ as.list( res )
 @
 
 
-\subsection{Temperature}
+% \subsection{Temperature}
 
-TODO: Example from Hadoop book. around 30 GB of raw data.
+% TODO: Example from Hadoop book. around 30 GB of raw data.
 
-<<>>=
-data <- "~/tmp/NCDC"
-require("hive")
-require("DSL")
+% <<>>=
+% data <- "~/tmp/NCDC"
+% require("hive")
+% require("DSL")
 
-## first force 1 chunk per file (set max chunk size to 1 byte):
-ds <- DStorage("LFS", tempdir(), chunksize = 1L)
-## make "DList", i.e., read file contents and store in chunks
-dl <- as.DList( data,
-                DStorage = ds )
+% ## first force 1 chunk per file (set max chunk size to 1 byte):
+% ds <- DStorage("LFS", tempdir(), chunksize = 1L)
+% ## make "DList", i.e., read file contents and store in chunks
+% dl <- as.DList( data,
+%                 DStorage = ds )
 
-dl <- DMap(dl, function( keypair ){
-    con <- gzfile(keypair$value)
-    lines <- tryCatch(readLines(con),
-                      error = function(x) NA)
-    close( con )
-    mapply( function(key, value) list( key = key, value = value),
-           keypair$key, lines,
-           SIMPLIFY = FALSE, USE.NAMES = FALSE )
-})
+% dl <- DMap(dl, function( keypair ){
+%     con <- gzfile(keypair$value)
+%     lines <- tryCatch(readLines(con),
+%                       error = function(x) NA)
+%     close( con )
+%     mapply( function(key, value) list( key = key, value = value),
+%            keypair$key, lines,
+%            SIMPLIFY = FALSE, USE.NAMES = FALSE )
+% })
 
-ds <- DStorage( "HDFS", tempdir() )
+% ds <- DStorage( "HDFS", tempdir() )
 
-DL_storage(dl) <- ds
+% DL_storage(dl) <- ds
 
-int <- DMap(dl, function( keypair ){
-   airtemp <- as.integer( substr(keypair$value, 88, 92) )
-   if( airtemp == 9999 || (! as.integer(substr(keypair$value, 93, 93))
-   %in% c(0L,1L,4L,5L,9L)) )
-     airtemp <- NA
-   list(key = substr(keypair$value, 16, 19),
-        value = airtemp)
-})
+% int <- DMap(dl, function( keypair ){
+%    airtemp <- as.integer( substr(keypair$value, 88, 92) )
+%    if( airtemp == 9999 || (! as.integer(substr(keypair$value, 93, 93))
+%    %in% c(0L,1L,4L,5L,9L)) )
+%      airtemp <- NA
+%    list(key = substr(keypair$value, 16, 19),
+%         value = airtemp)
+% })
 
-maxtemp <- DReduce( int, function(x) max(x, na.rm = TRUE) )
+% maxtemp <- DReduce( int, function(x) max(x, na.rm = TRUE) )
 
-as.list(maxtemp)
-@
+% as.list(maxtemp)
+% @
 
 
 \section{Conclusion and Outlook}
