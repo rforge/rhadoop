@@ -115,6 +115,7 @@ keepRevisions <- function( corpus )
     stopifnot( length(value) == 1L )
     stopifnot( is.logical(value) )
     attr(corpus, "keep") <- value
+    corpus
 }
 
 ## remove a given revision
