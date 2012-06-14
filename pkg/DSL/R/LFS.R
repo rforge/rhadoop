@@ -68,13 +68,12 @@
         result <- MAP( input )
 
         ## FIXME: should be an object oriented approach here
-        if( length(result) > 2 )
-            for( i in seq_along(result) )
-                writeLines( sprintf("%s\t%s", result[[i]]$key, DSL_serialize_object(result[[i]]$value)),
-                           con2 )
+        ##        there should be a test if given structure is really a (list of) key value pair(s).
+        if( (length(result) == 2) && identical(names(result), c("key", "value")))
+            writeLines( sprintf("%s\t%s", result$key, DSL_serialize_object(result$value)), con2 )
         else
-            writeLines( sprintf("%s\t%s", result$key, DSL_serialize_object(result$value)),
-                           con2 )
+            for( i in seq_along(result) )
+                writeLines( sprintf("%s\t%s", result[[i]]$key, DSL_serialize_object(result[[i]]$value)), con2 )
     }
     ## In the last step we need to add a stamp to this chunk
     ## <key:randomstring, value_serialized:c(firstdocumentkey,lastdocumentkey)>
