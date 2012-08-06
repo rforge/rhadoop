@@ -90,7 +90,7 @@ summary.DCorpus <- function( object, ... ) {
     cat( "\nDCorpus revisions:\n" )
     cat( strwrap(paste(unlist(getRevisions(object)), collapse = " "), indent = 2, exdent = 2), "\n" )
     cat( sprintf("DCorpus active revision: %s\n\n", DSL:::.revisions(object)[1]) )
-    print( DStorage(object) )
+    print( DL_storage(object) )
 }
 
 ## Get all available revisions from the DC
