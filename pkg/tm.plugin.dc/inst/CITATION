@@ -1,0 +1,21 @@
+citHeader("To cite tm in publications use:")
+
+citEntry(entry = "Article",
+  title        = "A {tm} Plug-In for Distributed Text Mining in {R}",
+  author       = personList(as.person("Stefan Theu{\\ss}l"),
+                   as.person("Ingo Feinerer"),
+                   as.person("Kurt Hornik")),
+  journal      = "Journal of Statistical Software",
+  year         = "2012",
+  volume       = "51",
+  number       = "5",
+  pages        = "1--31",
+  url          = "http://www.jstatsoft.org/v51/i05/",
+
+  textVersion  =
+  paste("Stefan Theussl, Ingo Feinerer, Kurt Hornik (2012).",
+        "A tm Plug-In for Distributed Text Mining in R.",
+        "Journal of Statistical Software, 51(5), 1-31.",
+        "URL http://www.jstatsoft.org/v51/i05/.")
+)
+
