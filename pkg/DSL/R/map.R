@@ -27,7 +27,7 @@ DLapply <- function( x, FUN, parallel, ..., keep = FALSE ){
 ################################################################################
 
 DMap <- function( x, MAP, parallel, keep = FALSE ){
-    x <- as.DList( x )
+    stopifnot( inherits(x, "DList") )
     if( missing(parallel) )
         parallel <- FALSE
     ## HDFS is always parallel since we cannot easily control parallel

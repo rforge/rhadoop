@@ -7,7 +7,7 @@ function(x, FUN, ..., useMeta = FALSE, lazy = FALSE) {
     if (useMeta)
         result <- tm:::Content(result) <- DLapply(x, FUN, ..., DMetaData = DMetaData(x), keep = attr(x, "keep"))
     else
-    result <- tm:::Content(result) <- DLapply(x, FUN, ..., keep = attr(x, "keep"))
-
+        result <- tm:::Content(result) <- DLapply(x, FUN, ..., keep = attr(x, "keep"))
+    inherits( x, "DList" )
     result
 }
