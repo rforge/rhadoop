@@ -1,4 +1,4 @@
-\documentclass[article,nojss]{jss}
+\documentclass[nojss]{jss}
 \usepackage{graphicx,keyval,thumbpdf,url}
 
 \newcommand{\sQuote}[1]{`{#1}'}
@@ -7,20 +7,16 @@
 \newcommand{\class}[1]{\code{"#1"}}
 
 %% need no \usepackage{Sweave.sty}
-\SweaveOpts{engine=R,eps=FALSE,results=verbatim,fig=FALSE,echo=TRUE,strip.white=true}
+%%\SweaveOpts{engine=R,eps=FALSE,results=verbatim,fig=FALSE,echo=TRUE,strip.white=true}
 \AtBeginDocument{\setkeys{Gin}{width=0.6\textwidth}}
 
 \date{\today}
 \title{Distributed Storage and Lists}
 \Plaintitle{Distributed Storage and Lists}
+\Shorttitle{DSL}
 \author{Stefan Theu\ss{}l}
 \Plainauthor{Stefan Theussl}
 %% \VignetteIndexEntry{DSL}
-
-\sloppy{}
-
-\begin{document}
-\maketitle
 
 \Abstract{
   Distributed lists are list-type objects where elements (i.e.,
@@ -36,24 +32,32 @@
   operate on such lists efficiently using the MapReduce programming
   model.
 }
-
 \Keywords{\proglang{R}, lists, MapReduce}
 \Plainkeywords{R, lists, MapReduce}
 
 \Address{
-  Stefan Theussl\\
-  Institute for Statistics and Mathematics\\
-  WU Wirtschaftsuniversit\"at Wien\\
-  Augasse 2--6\\
-  1090 Wien, Austria
-  E-mail: \email{Stefan.Theussl@wu.ac.at}\\
-  URL: \url{http://statmath.wu.ac.at/~theussl/}\\
+  Stefan Theu\ss{}l\\
+%%  Institute for Statistics and Mathematics\\
+%%  WU Wirtschaftsuniversit\"at Wien\\
+%%  Augasse 2--6\\
+%%  1090 Wien, Austria
+  E-mail: \email{Stefan.Theussl@R-project.org}\\
+%%  URL: \url{http://statmath.wu.ac.at/~theussl/}\\
 }
+
+
+
+\begin{document}
 
 <<init, echo=FALSE>>=
 options(width = 60)
 require("DSL")
 @ %
+
+\maketitle
+\sloppy{}
+
+
 
 \section{Introduction}
 \label{sec:introduction}

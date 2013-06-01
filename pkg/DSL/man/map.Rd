@@ -72,7 +72,8 @@ error = function(x) NA) )
 ## split into terms
 splitwords <- function( keypair ){
     keys <- unlist(strsplit(keypair$value, " "))
-    mapply( function(key, value) list( key = key, value = value), keys, rep(1L, length(keys)), SIMPLIFY = FALSE, USE.NAMES = FALSE)
+    mapply( function(key, value) list( key = key, value = value), keys, rep(1L, length(keys)),
+            SIMPLIFY = FALSE, USE.NAMES = FALSE )
 }
 res <- DMap( dl, splitwords )
 as.list(res)
