@@ -163,14 +163,14 @@ DS_chunksize <-function( storage )
 
 DS_dir_create <- function( storage, dir ){
     stopifnot( is.DStorage(storage) )
-    dir <- sub("/[.]/", "", file.path(DS_base_dir(storage), dir ))
+    dir <- sub("/./", "", file.path(DS_base_dir(storage), dir ), fixed = TRUE )
     storage$dir_create( dir )
 }
 
 
 DS_fetch_last_line <- function( storage, file ){
     stopifnot( is.DStorage(storage) )
-    file <- sub("/[.]/", "", file.path(DS_base_dir(storage), file ))
+    file <- sub("/./", "", file.path(DS_base_dir(storage), file ), fixed = TRUE)
     storage$fetch_last_line( file )
 }
 
@@ -202,13 +202,13 @@ DS_read_lines <- function( storage, file ){
 ## deletes a link on the corresponding storage (file, directory)
 DS_unlink <- function( storage, link ){
     stopifnot( is.DStorage(storage) )
-    link <- sub("/[.]/", "", file.path(DS_base_dir(storage), link ))
+    link <- sub("/./", "", file.path(DS_base_dir(storage), link ), fixed = TRUE)
     storage$unlink( link )
 }
 
 DS_write_lines <- function( storage, text, file ){
     stopifnot( is.DStorage(storage) )
-    file <- sub("/[.]/", "", file.path(DS_base_dir(storage), file ))
+    file <- sub("/./", "", file.path(DS_base_dir(storage), file ), fixed = TRUE)
     storage$write_lines( text, file )
 }
 
