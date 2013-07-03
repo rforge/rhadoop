@@ -69,6 +69,7 @@ require( "tm.corpus.Reuters21578" )
 data( Reuters21578 )
 
 Reuters21578[[1]]
+meta(Reuters21578[[1]])
 
 seqt <- system.time( l <- lapply( Reuters21578, stemDocument ) )["elapsed"]
 
@@ -143,3 +144,9 @@ is.DList(dc)
 DL_storage(dc)
 dc[[2]]
 
+dtm <- DocumentTermMatrix( Reuters21578 )
+dtm
+
+
+require("slam")
+head( sort( col_sums( dtm ), decreasing = TRUE), n = 10 )
