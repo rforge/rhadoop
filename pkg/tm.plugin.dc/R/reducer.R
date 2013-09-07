@@ -10,7 +10,7 @@ TermDocumentMatrix.DCorpus <- function( x, control = list() ){
     args <- control
     ## this is borrowed tm code (2011-11-27) to make things as compatible as possible
     MAP <- function(keypair){
-        tf <- tm:::termFreq(keypair$value, args)
+        tf <- tm::termFreq(keypair$value, args)
         mapply( function(key, value) list( key = key, value = value), make.names(names(tf)),
                mapply(function(id, count) list(id = id, count = count), as.integer(tm::ID(keypair$value)), tf, SIMPLIFY = FALSE, USE.NAMES = FALSE), SIMPLIFY = FALSE, USE.NAMES = FALSE )
     }
