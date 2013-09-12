@@ -16,7 +16,7 @@
 DistributedCorpus <-
 DCorpus <- function( x,
                     readerControl = list(reader   = x$DefaultReader,
-                    language = "eng"),
+                    language = "en"),
                     storage = NULL, keep = TRUE, ... ) {
     ## For the moment we
     ##   - only support a directory as source (DirSource)
@@ -25,7 +25,12 @@ DCorpus <- function( x,
     if( !inherits(x, "DirSource") )
             stop("unsupported source type (use DirSource instead)")
 
-    readerControl <- tm:::prepareReader(readerControl, x$DefaultReader, ...)
+    if (is.null(readerControl$reader))
+        readerControl$reader <- x$defaultReader
+    if (inherits(readerControl$reader, "FunctionGenerator"))
+        readerControl$reader <- readerControl$reader(...)
+    if (is.null(readerControl$language))
+        readerControl$language <- "en"
 
     if (is.function(readerControl$init))
         readerControl$init()
@@ -44,13 +49,17 @@ DCorpus <- function( x,
 
     names(tdl) <- x$Names
     df <- data.frame(MetaID = rep(0, length(tdl)), stringsAsFactors = FALSE)
-    .DCorpus( tdl, keep, tm:::.MetaDataNode(), df )
+    mdn <- structure(list(NodeID = 0,
+                          MetaData = list(),
+                          Children = NULL),
+                     class = "MetaDataNode")
+    .DCorpus( tdl, keep, mdn, df )
 }
 
 
 print.DCorpus <- function(x, ...) {
     cat("DCorpus. ")
-    tm:::print.Corpus( x, ... )
+    UseMethod("print", structure(x, class = c("Corpus", "list")))
 }
 
 
@@ -78,9 +87,11 @@ as.Corpus <- function( x ){
 
 as.Corpus.Corpus <- identity
 
-as.Corpus.DCorpus <- function( x ){
-    tm:::.VCorpus( as.list(x), CMetaData(x), DMetaData(x) )
-}
+as.Corpus.DCorpus <- function( x )
+    structure(as.list(x),
+              CMetaData = CMetaData(x),
+              DMetaData = DMetaData(x),
+              class = c("VCorpus", "Corpus", "list"))
 
 DMetaData.DCorpus <- function( x )
     attr(x, "DMetaData")
@@ -134,4 +145,3 @@ removeRevision <- function( corpus, revision ){
 ##     DStorage$chunksize = 1L
 ##     as.DList( as.list(x$FileList), DStorage = DStorage, ... )
 ## }
-

@@ -39,16 +39,18 @@ TermDocumentMatrix.DCorpus <- function( x, control = list() ){
                                          nrow = length(uniq_terms),
                                          ncol = length(x),
                                          dimnames = list(Terms = uniq_terms,
-                                         Docs = alldocs)) )
+                                                         Docs = alldocs)) )
     bg <- control$bounds$global
     if (length(bg) == 2L && is.numeric(bg)) {
         rs <- row_sums(m > 0)
         m <- m[(rs >= bg[1]) & (rs <= bg[2]), ]
     }
+
     weighting <- control$weighting
     if (is.null(weighting))
         weighting <- weightTf
-    tm:::.TermDocumentMatrix(m, weighting)
+
+    tm::as.TermDocumentMatrix(m, weighting)
 }
 
 ## FIXME: we can do this more efficiently
@@ -62,6 +64,3 @@ TermDocumentMatrix.DCorpus <- function( x, control = list() ){
   x$v <- x$v[cmo]
   x
 }
-
-## old code
-
