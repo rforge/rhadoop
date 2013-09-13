@@ -59,7 +59,7 @@ DCorpus <- function( x,
 
 print.DCorpus <- function(x, ...) {
     cat("DCorpus. ")
-    UseMethod("print", structure(x, class = c("Corpus", "list")))
+    getS3method("print", "Corpus")(x)
 }
 
 
@@ -97,7 +97,7 @@ DMetaData.DCorpus <- function( x )
     attr(x, "DMetaData")
 
 summary.DCorpus <- function( object, ... ) {
-    tm:::summary.Corpus( object )
+    getS3method("summary", "Corpus")(object)
     cat( "\nDCorpus revisions:\n" )
     cat( strwrap(paste(unlist(getRevisions(object)), collapse = " "), indent = 2, exdent = 2), "\n" )
     cat( sprintf("DCorpus active revision: %s\n\n", DSL:::.revisions(object)[1]) )
