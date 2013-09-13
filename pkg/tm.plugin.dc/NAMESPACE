@@ -2,6 +2,8 @@ import("tm")
 import("DSL")
 import("slam")
 
+importFrom("utils", "getS3method")
+
 ## Constructor (second constructor for compatibility reasons)
 export("DCorpus", "DistributedCorpus")
 
