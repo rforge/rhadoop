@@ -15,8 +15,8 @@
 
 DistributedCorpus <-
 DCorpus <- function( x,
-                    readerControl = list(reader   = x$DefaultReader,
-                    language = "en"),
+                    readerControl = list(reader = x$DefaultReader,
+                                         language = "en"),
                     storage = NULL, keep = TRUE, ... ) {
     ## For the moment we
     ##   - only support a directory as source (DirSource)
@@ -26,7 +26,7 @@ DCorpus <- function( x,
             stop("unsupported source type (use DirSource instead)")
 
     if (is.null(readerControl$reader))
-        readerControl$reader <- x$defaultReader
+        readerControl$reader <- x$DefaultReader
     if (inherits(readerControl$reader, "FunctionGenerator"))
         readerControl$reader <- readerControl$reader(...)
     if (is.null(readerControl$language))

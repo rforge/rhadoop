@@ -12,7 +12,7 @@
 \usage{
 DCorpus( x,
          readerControl = list(reader   = x$DefaultReader,
-                              language = "eng"),
+                              language = "en"),
          storage = NULL, keep = TRUE, ... )
 as.Corpus( x )
 as.DCorpus( x, storage = NULL, ... )
@@ -26,7 +26,7 @@ as.DCorpus( x, storage = NULL, ... )
   \item{readerControl}{A list with the named components \code{reader}
     representing a reading function capable of handling the file format
     found in \code{source}, and \code{language} giving the text's language
-    (preferably in \acronym{ISO} 639-2 format).}
+    (preferably as \acronym{IETF} language tags).}
   \item{storage}{The storage subsystem to use with the
     DCorpus. Currently two types of storages are supported:
     local disk storage using the Local File System (LFS) and the Hadoop
