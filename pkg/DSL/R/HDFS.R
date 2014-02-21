@@ -215,7 +215,7 @@
 }
 
 .get_chunks_after_MapReduce <- function(storage, rev)
-    file.path( rev, grep("part-", DSL:::DS_list_directory(storage, rev),
+    file.path( rev, grep("part-", DS_list_directory(storage, rev), ## removed DSL:::
                               value =TRUE) )
 
 
@@ -227,7 +227,7 @@
     ind <- !unlist( lapply(chunks, is.null) )
     ## FIXME: need to provide a DS_<> method here?
     for( part in parts[ind] )
-        hive:::DFS_rename( from = file.path(DS_base_dir(storage), part),
+        hive::DFS_rename( from = file.path(DS_base_dir(storage), part),
                            to   = file.path(DS_base_dir(storage), rev, basename(chunks[[part]])) )
     invisible( TRUE )
 }

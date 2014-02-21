@@ -73,7 +73,7 @@ DS_default <- function(){
                                                      close.connection(con)
                                                  },
                read_lines      = function(x) base::readLines(as.character(x)),
-               unlink          = function(x) DSL:::LFS_remove(x),
+               unlink          = function(x) LFS_remove(x), ## removed DSL:::
                write_lines     = function(text, fil) base::writeLines(text, con = as.character(fil)), ...
               )
 }

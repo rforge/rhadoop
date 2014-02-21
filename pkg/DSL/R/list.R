@@ -105,7 +105,7 @@ as.DList.list <- function(x, DStorage = NULL, ...){
 ## IDEA: as.DList.character creates a DList based on files in a directory (=character string) in a DFS
 as.DList.character <- function(x, DStorage = NULL, ...){
     if( is.null(DStorage) )
-        DStorage <- DSL:::DS_default()
+        DStorage <- DS_default()
     keys <- DStorage$list_directory( x )
     filelist <- as.list(file.path(x, keys))
     names(filelist) <- keys

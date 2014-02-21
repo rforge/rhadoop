@@ -107,7 +107,7 @@ DFS_list <- function( path = ".", henv = hive() ) {
     return(character(0))
   }
 
-  splitted <- strsplit(grep(path, hive:::.DFS_intern("-ls", path, henv), value = TRUE), path)
+  splitted <- strsplit(grep(path, .DFS_intern("-ls", path, henv), value = TRUE), path)
   sapply(splitted, function(x) basename(x[2]))
 }
 

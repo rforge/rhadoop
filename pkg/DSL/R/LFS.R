@@ -92,7 +92,7 @@
     ## use efficient collector for integer pairlists
     CONCATENATE <- function( collector = FALSE )
         if( collector ){
-            DSL:::.collector2
+            .collector2 ## FIXME: untested remove of DSL:::
         } else {
             base::c
         }
@@ -111,7 +111,7 @@
     ## STREAM
 
     while (length(line <- readLines(con, n = 1L, warn = FALSE)) > 0) {
-        input <- DSL:::DSL_split_line( line )
+        input <- DSL_split_line( line ) ## FIXME: untested remove of DSL:::
         ## Skip end of line
         if( length(grep("^<<EOF-", input$key)) ){
             chunk <- as.character(input$value["Chunk"])
@@ -140,12 +140,12 @@
     ## OUTPUT
     env <- as.list(env)
     if( INTPAIRLIST ){
-        env <- lapply(env, DSL:::.collector2, NULL)
+        env <- lapply(env, .collector2, NULL) ## FIXME: untested remove of DSL:::
     }
     keys <- names(env)
     for( i in seq_along(keys) )
         writeLines( sprintf("%s\t%s", keys[i],
-                     DSL:::DSL_serialize_object(REDUCE(env[[ i ]]))), con = con2 )
+                     DSL_serialize_object(REDUCE(env[[ i ]]))), con = con2 ) ## FIXME: untested remove of DSL:::
     writeLines( .make_chunk_signature( chunk ),
                con2 )
     close(con2)

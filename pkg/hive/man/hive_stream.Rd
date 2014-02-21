@@ -55,9 +55,12 @@ streaming_args = NULL)
 ## A simple word count example
 
 ## Put some xml files on the HDFS:
-\dontrun{DFS_put(system.file("defaults/core/", package = "hive"), "/tmp/input")}
-\dontrun{DFS_put(system.file("defaults/hdfs/hdfs-default.xml", package = "hive"), "/tmp/input")}
-\dontrun{DFS_put(system.file("defaults/mapred/mapred-default.xml", package = "hive"), "/tmp/input")}
+\dontrun{DFS_put( system.file("defaults/core/", package = "hive"),
+                  "/tmp/input" )}
+\dontrun{DFS_put( system.file("defaults/hdfs/hdfs-default.xml", package = "hive"),
+                  "/tmp/input" )}
+\dontrun{DFS_put( system.file("defaults/mapred/mapred-default.xml", package = "hive"),
+                  "/tmp/input" )}
 ## Define the mapper and reducer function to be applied:
 ## Note that a Hadoop map or reduce job retrieves data line by line from stdin.
 \dontrun{
@@ -76,7 +79,8 @@ reducer <- function(x){
     while (length(line <- readLines(con, n = 1L, warn = FALSE)) > 0) {
         keyvalue <- unlist( strsplit(line, "\t") )
         if( exists(keyvalue[1], envir = env, inherits = FALSE) ){
-            assign( keyvalue[1], get(keyvalue[1], envir = env) + as.integer(keyvalue[2]), envir = env )
+            assign( keyvalue[1], get(keyvalue[1], envir = env) + as.integer(keyvalue[2]),
+                    envir = env )
         } else {
             assign( keyvalue[1], as.integer(keyvalue[2]), envir = env )
         }

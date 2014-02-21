@@ -4,7 +4,7 @@
 .hinit <- function( hadoop_home ) {
   ## use installation in HADOOP_HOME if it exists, otherwise the Debian default
   if( missing(hadoop_home) )
-    hadoop_home <- ifelse(tools:::file_test("-d", Sys.getenv("HADOOP_HOME")), Sys.getenv("HADOOP_HOME"), "/etc/hadoop")
+    hadoop_home <- ifelse( utils::file_test("-d", Sys.getenv("HADOOP_HOME")), Sys.getenv("HADOOP_HOME"), "/etc/hadoop" )
   tmp <- tryCatch( hive_create(hadoop_home), error = identity )
   hive <- if( inherits(tmp, "error") )
     .hive_default_env()
@@ -67,7 +67,7 @@ hive_create <- function( hadoop_home ){
           hadoop_src <- system.file("defaults", package = "hive")
       }
       local( {
-          hadoop <- if( tools:::file_test("-x", file.path(hadoop_home, "bin", "hadoop")) )
+          hadoop <- if( utils::file_test("-x", file.path(hadoop_home, "bin", "hadoop")) )
               file.path(hadoop_home, "bin", "hadoop")
           else
               Sys.which("hadoop")

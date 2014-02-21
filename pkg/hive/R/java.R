@@ -75,24 +75,23 @@ IOUTILS <- function(henv = hive()){
 ## suboptimal in an Hadoop session we need to redirect the output.
 redirect_java_output <- function(x = NULL){
     ## need this when called in streaming jobs (no jvm started)
-    require("rJava")
-    .jinit()
+    rJava::.jinit()
     if(is.null(x)){
-        bos <- .jnew( "java/io/ByteArrayOutputStream" )
-        out <- .jfield( "java/lang/System", , "out" )
-        .jcall( "java/lang/System", "V", "setOut",
-               .jnew("java/io/PrintStream", .jcast(bos,"java/io/OutputStream")) )
-        err <- .jfield( "java/lang/System", , "err" )
-        .jcall( "java/lang/System", "V", "setErr",
-               .jnew("java/io/PrintStream", .jcast(bos,"java/io/OutputStream")) )
+        bos <- rJava::.jnew( "java/io/ByteArrayOutputStream" )
+        out <- rJava::.jfield( "java/lang/System", , "out" )
+        rJava::.jcall( "java/lang/System", "V", "setOut",
+               rJava::.jnew("java/io/PrintStream", rJava::.jcast(bos,"java/io/OutputStream")) )
+        err <- rJava::.jfield( "java/lang/System", , "err" )
+        rJava::.jcall( "java/lang/System", "V", "setErr",
+               rJava::.jnew("java/io/PrintStream", rJava::.jcast(bos,"java/io/OutputStream")) )
         out <- list(out = out, err = err)
     }
     else {
         if(is.list(x)){
-            .jcall("java/lang/System", "V", "setOut", out)
-            .jcall("java/lang/System", "V", "setErr", err)
+            rJava::.jcall("java/lang/System", "V", "setOut", out)
+            rJava::.jcall("java/lang/System", "V", "setErr", err)
             ## Display them if wanted.
-            message(.jcall(bos, "Ljava/lang/String;", "toString"))
+            message(rJava::.jcall(bos, "Ljava/lang/String;", "toString"))
         }
         out <- NULL
     }
