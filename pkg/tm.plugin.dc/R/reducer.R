@@ -12,12 +12,12 @@ TermDocumentMatrix.DCorpus <- function( x, control = list() ){
     MAP <- function(keypair){
         tf <- tm::termFreq(keypair$value, args)
         mapply( function(key, value) list( key = key, value = value), make.names(names(tf)),
-               mapply(function(id, count) list(id = id, count = count), as.integer(tm::ID(keypair$value)), tf, SIMPLIFY = FALSE, USE.NAMES = FALSE), SIMPLIFY = FALSE, USE.NAMES = FALSE )
+               mapply(function(id, count) list(id = id, count = count), as.integer(meta(keypair$value, "id")), tf, SIMPLIFY = FALSE, USE.NAMES = FALSE), SIMPLIFY = FALSE, USE.NAMES = FALSE )
     }
     ## Apply above map function, then reduce, then retrieve partial
     ## results from file system (term / {key / term frequency})
     ## {} indicates serialized object; we use the standard collector in the reduce step
-    intermed <- DReduce(DMap(x, MAP))
+    intermed <- DReduce(DMap(x$content, MAP))
 
     ## first extract the terms. NOTE: they are not necessarily unique as there may be
     ## some terms duplicated among different chunks. Terms derived from the same chunk are unique.

@@ -39,12 +39,12 @@ keepRevisions( corpus )
 data("crude")
 dc <- as.DCorpus(crude)
 ## do some preprocessing
-dc <- tm_map(dc, tolower)
+dc <- tm_map(dc, tm::genMap(tolower))
 ## retrieve available revisions
 revs <- getRevisions(dc)
 revs
 ## go back to original revision
-setRevision(dc, revs[1])
+setRevision(dc, revs[2])
 keepRevisions(dc)
 keepRevisions(dc) <- FALSE
 }

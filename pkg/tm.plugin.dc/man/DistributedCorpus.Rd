@@ -3,7 +3,7 @@
 \alias{DistributedCorpus}
 \alias{as.DCorpus}
 \alias{as.DistributedCorpus}
-\alias{as.Corpus}
+\alias{as.VCorpus.DCorpus}
 
 \title{Distributed Corpus}
 \description{
@@ -11,17 +11,17 @@
 }
 \usage{
 DCorpus( x,
-         readerControl = list(reader   = x$DefaultReader,
+         readerControl = list(reader   = reader(x),
                               language = "en"),
          storage = NULL, keep = TRUE, ... )
-as.Corpus( x )
+\method{as.VCorpus}{DCorpus}(x)
 as.DCorpus( x, storage = NULL, ... )
 }
 \arguments{
   \item{x}{for \code{DCorpus}, a \code{\link[tm]{Source}} object. At the
     moment only \code{\link[tm]{DirSource}} is supported. For
-    \code{as.Corpus()} and  \code{as.DCorpus()}, an object to be coerced
-    to a \code{Corpus}/\code{DCorpus}. Currently coercion from/to
+    \code{as.VCorpus()} and  \code{as.DCorpus()}, an object to be coerced
+    to a \code{VCorpus}/\code{DCorpus}. Currently coercion from/to
     classic \pkg{tm} corpora (\code{VCorpus}) is implemented.} 
   \item{readerControl}{A list with the named components \code{reader}
     representing a reading function capable of handling the file format
@@ -52,7 +52,7 @@ as.DCorpus( x, storage = NULL, ... )
   replacement function.\
   
   The constructed corpus object inherits from a \pkg{tm}
-  \code{\link[tm]{Corpus}} and has several attributes containing meta
+  \code{\link[tm]{Corpus}} and has several slots containing meta
   information:
   \describe{
 %%    \item{ActiveRevision}{Contains the current revision (random string)
@@ -61,18 +61,11 @@ as.DCorpus( x, storage = NULL, ... )
 %%      multiple snapshots.}. 
 %%    \item{Chunks}{A list of file names on the local disk/HFS representing
 %%      underlying chunks holding the (serialized) documents.}
-    \item{\code{CMetaData}}{Corpus Meta Data contains corpus specific
-      meta data in form of tag-value pairs and information about
-      children in form of a binary tree. This information is useful for
-      reconstructing meta data after e.g. merging corpora. This is
-      mainly available to be compatible with standard \pkg{tm} corpus
-      definitions but not yet actually used in the distributed scenario.}
-    \item{\code{DMetaData}}{Document Meta Data of class
+    \item{\code{meta}}{Corpus Meta Data contains corpus specific
+      meta data in form of tag-value pairs.}
+    \item{\code{dmeta}}{Document Meta Data of class
       \code{data.frame} contains document specific meta data for the
-      corpus. This data frame typically encompasses clustering or
-      classification results which basically are metadata for documents
-      but form an own entity (e.g., with its name, the value range,
-      etc.). This is mainly available to be compatible with standard
+      corpus. This is mainly available to be compatible with standard
       \pkg{tm} corpus definitions but not yet actually used in the
       distributed scenario.}
     \item{\code{keep}}{A logical indicating whether revisions
@@ -90,9 +83,7 @@ as.DCorpus( x, storage = NULL, ... )
   }					     
 }
 \value{
-  An object of class \code{DCorpus} which extends the classes
-  \code{Corpus} and \code{DList} containing a collection of text
-  documents.
+  An object inheriting from \code{DCorpus} and \code{Corpus}.
 }
 \examples{
 ## Similar to example in package 'tm'
@@ -104,11 +95,12 @@ dc
 ## Coercion
 data("crude")
 as.DistributedCorpus(crude)
-as.Corpus(dc)
+as.VCorpus(dc)
 }
 \author{
   Ingo Feinerer and Stefan Theussl
 }
 \seealso{
-  \code{\link[tm]{Corpus}}
+  \code{\link[tm]{Corpus}} for basic information on the corpus infrastructure
+  employed by package \pkg{tm}.
 }

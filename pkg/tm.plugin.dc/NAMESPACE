@@ -2,6 +2,7 @@ import("tm")
 import("DSL")
 import("slam")
 
+importFrom("NLP", "meta")
 importFrom("utils", "getS3method")
 
 ## Constructor (second constructor for compatibility reasons)
@@ -16,17 +17,20 @@ export("setRevision")
 
 ## Generic functions
 export("as.DCorpus", "as.DistributedCorpus")
-export("as.Corpus")
 
 ## Methods on DistributedCorpus
-S3method("DMetaData", "DCorpus")
+S3method("[", "DCorpus")
+S3method("[[", "DCorpus")
+S3method("[[<-", "DCorpus")
+S3method("as.list", "DCorpus")
+S3method("length", "DCorpus")
+S3method("meta", "DCorpus")
 S3method("print", "DCorpus")
 S3method("summary", "DCorpus")
 S3method("TermDocumentMatrix", "DCorpus")
 S3method("tm_map", "DCorpus")
 
 ## Methods on Corpus
-S3method("as.DCorpus", "Corpus")
+S3method("as.DCorpus", "VCorpus")
 S3method("as.DCorpus", "DCorpus")
-S3method("as.Corpus", "Corpus")
-S3method("as.Corpus", "DCorpus")
+S3method("as.VCorpus", "DCorpus")

@@ -2,22 +2,20 @@
 
 ## "DCorpus" class
 .DCorpus <- function( x, keep, cmeta, dmeta ) {
-  attr( x, "CMetaData" )      <- cmeta
-  attr( x, "DMetaData" )      <- dmeta
   ## use revisions? Default: TRUE. This can be turned off using
   ## setRevision() replacement function.
   if( missing(keep) )
       keep <- TRUE
-  attr( x, "keep" )           <- keep
-  class( x )                  <- c( "DCorpus", "DList", "Corpus", "list" )
-  x
+  structure(list(content = x, meta = cmeta, dmeta = dmeta, keep = keep),
+            class = c("DCorpus", "Corpus"))
 }
 
 DistributedCorpus <-
-DCorpus <- function( x,
-                    readerControl = list(reader = x$DefaultReader,
-                                         language = "en"),
-                    storage = NULL, keep = TRUE, ... ) {
+DCorpus <-
+function(x,
+         readerControl = list(reader = reader(x), language = "en"),
+         storage = NULL, keep = TRUE, ...)
+{
     ## For the moment we
     ##   - only support a directory as source (DirSource)
     ## TODO: add DList source
@@ -26,7 +24,7 @@ DCorpus <- function( x,
             stop("unsupported source type (use DirSource instead)")
 
     if (is.null(readerControl$reader))
-        readerControl$reader <- x$DefaultReader
+        readerControl$reader <- reader(x)
     if (inherits(readerControl$reader, "FunctionGenerator"))
         readerControl$reader <- readerControl$reader(...)
     if (is.null(readerControl$language))
@@ -38,75 +36,71 @@ DCorpus <- function( x,
     if (is.function(readerControl$exit))
         on.exit(readerControl$exit())
 
-    if (x$Vectorized){
+    # Check for parallel element access
+    if (is.function(getS3method("pGetElem", class(x), TRUE))) {
         elem <- pGetElem(x)
-        if (is.null(x$Names))
-            names(elem) <- x$Names
+        if (!is.null(names(x)))
+            names(elem) <- names(x)
         tdl <- DMap(as.DList(elem, DStorage = storage), function(keypair) list(key = keypair$key, value = readerControl$reader(keypair$value, readerControl$language, keypair$key)) )
     }
     else
         stop( "Non-vectorized operation not yet implemented.")
 
-    names(tdl) <- x$Names
-    df <- data.frame(MetaID = rep(0, length(tdl)), stringsAsFactors = FALSE)
-    mdn <- structure(list(NodeID = 0,
-                          MetaData = list(),
-                          Children = NULL),
-                     class = "MetaDataNode")
-    .DCorpus( tdl, keep, mdn, df )
+    names(tdl) <- names(x)
+    df <- data.frame(row.names = seq_along(tdl))
+    cm <- structure(list(), class = "CorpusMeta")
+    .DCorpus( tdl, keep, cm, df )
 }
 
+`[.DCorpus` <- getS3method("[", "VCorpus")
 
-print.DCorpus <- function(x, ...) {
-    cat("DCorpus. ")
-    getS3method("print", "Corpus")(x)
-}
+`[[.DCorpus` <- getS3method("[[", "VCorpus")
 
+`[[<-.DCorpus` <- getS3method("[[<-", "VCorpus")
+
+as.list.DCorpus <-
+function(x, ...)
+    as.list(x$content)
 
 as.DistributedCorpus <-
 as.DCorpus <- function(x, storage = NULL, ...){
   UseMethod("as.DCorpus")
 }
 
-as.DCorpus.DCorpus <- function(x, storage = NULL, ...){
-    identity(x)
-}
+as.DCorpus.DCorpus <- function(x, storage = NULL, ...)
+    x
 
-as.DCorpus.Corpus <- function(x, storage = NULL, ...){
-    dl <- as.DList(x, DStorage = storage, ...)
+as.DCorpus.VCorpus <- function(x, storage = NULL, ...){
+    dl <- as.DList(as.list(x), DStorage = storage, ...)
     .DCorpus( dl,
               keep = TRUE,
-              cmeta = CMetaData(x),
-              dmeta = DMetaData(x) )
+              cmeta = meta(x, type = "corpus"),
+              dmeta = meta(x, type = "indexed") )
 }
 
+as.VCorpus.DCorpus <- function(x)
+    structure(list(content = as.list(x),
+                   meta = meta(x, type = "corpus"),
+                   dmeta = meta(x, type = "indexed")),
+              class = c("VCorpus", "Corpus"))
 
-as.Corpus <- function( x ){
-    UseMethod("as.Corpus")
-}
+length.DCorpus <- getS3method("length", "VCorpus")
 
-as.Corpus.Corpus <- identity
+meta.DCorpus <- getS3method("meta", "VCorpus")
 
-as.Corpus.DCorpus <- function( x )
-    structure(as.list(x),
-              CMetaData = CMetaData(x),
-              DMetaData = DMetaData(x),
-              class = c("VCorpus", "Corpus", "list"))
-
-DMetaData.DCorpus <- function( x )
-    attr(x, "DMetaData")
+print.DCorpus <- getS3method("print", "VCorpus")
 
 summary.DCorpus <- function( object, ... ) {
-    getS3method("summary", "Corpus")(object)
+    print(object)
     cat( "\nDCorpus revisions:\n" )
     cat( strwrap(paste(unlist(getRevisions(object)), collapse = " "), indent = 2, exdent = 2), "\n" )
-    cat( sprintf("DCorpus active revision: %s\n\n", DSL:::.revisions(object)[1]) )
-    print( DL_storage(object) )
+    cat( sprintf("DCorpus active revision: %s\n\n", DSL:::.revisions(object$content)[1]) )
+    print( DL_storage(object$content) )
 }
 
 ## Get all available revisions from the DC
 getRevisions <- function( corpus ){
-    DSL:::.revisions( corpus )
+    DSL:::.revisions( corpus$content )
 }
 
 ## Set active revision in the DC to the specified revision
@@ -114,18 +108,18 @@ setRevision <- function( corpus, revision ){
     pos <- as.character(revision) == getRevisions(corpus)
     if( !any(pos) )
         warning( "invalid revision" )
-    DSL:::.revisions( corpus ) <- c( revision, getRevisions(corpus)[!pos] )
+    DSL:::.revisions( corpus$content ) <- c( revision, getRevisions(corpus)[!pos] )
     invisible(corpus)
 }
 
 ## the setRevision replacement function is used to turn revisions on and off
 keepRevisions <- function( corpus )
-    attr( corpus, "keep" )
+    corpus$keep
 
 `keepRevisions<-` <- function( corpus, value ){
     stopifnot( length(value) == 1L )
     stopifnot( is.logical(value) )
-    attr(corpus, "keep") <- value
+    corpus$keep <- value
     corpus
 }
 
@@ -134,7 +128,7 @@ removeRevision <- function( corpus, revision ){
     pos <- revision == getRevisions(corpus)
     if( !any(pos) )
         stop( "Revision to remove does not exist." )
-    DSL:::.revisions(corpus) <- getRevisions(corpus)[!pos]
+    DSL:::.revisions(corpus$content) <- getRevisions(corpus)[!pos]
     invisible( corpus )
 }
 

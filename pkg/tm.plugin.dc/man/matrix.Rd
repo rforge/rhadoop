@@ -23,8 +23,8 @@
 \examples{
 data("crude")
 tdm <- TermDocumentMatrix(as.DCorpus(crude),
-control = list(weighting = weightTfIdf, stopwords = TRUE))
-inspect(tdm[155:160,1:5])
+                          list(stopwords = TRUE, weighting = weightTfIdf))
+inspect(tdm[149:152,1:5])
 }
 \seealso{
   The documentation of \code{\link[tm]{termFreq}} gives an extensive list of
