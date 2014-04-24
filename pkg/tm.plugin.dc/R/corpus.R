@@ -44,7 +44,7 @@ function(x,
         tdl <- DMap(as.DList(elem, DStorage = storage), function(keypair) list(key = keypair$key, value = readerControl$reader(keypair$value, readerControl$language, keypair$key)) )
     }
     else
-        stop( "Non-vectorized operation not yet implemented.")
+        stop("Non-vectorized operation not yet implemented.")
 
     names(tdl) <- names(x)
     df <- data.frame(row.names = seq_along(tdl))

@@ -39,7 +39,7 @@ keepRevisions( corpus )
 data("crude")
 dc <- as.DCorpus(crude)
 ## do some preprocessing
-dc <- tm_map(dc, tm::genMap(tolower))
+dc <- tm_map(dc, content_transformer(tolower))
 ## retrieve available revisions
 revs <- getRevisions(dc)
 revs
