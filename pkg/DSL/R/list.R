@@ -139,12 +139,13 @@ is.DList <- function(x)
 ## S3 Methods on 'DList' objects
 ################################################################################
 
+## FIXME: there is a print method in the base package on DList.
 print.DList <- function(x, ...) {
     cat(sprintf(ngettext(length(x),
                          "A DList with %d element\n",
                          "A DList with %d elements\n"),
                 length(x)))
-    invisible(x)
+  invisible(x)
 }
 
 length.DList <- function(x)

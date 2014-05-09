@@ -259,7 +259,7 @@ interfaces which must be implemented by the \class{DList} class:
 \end{description}
 
 <<dl_methods>>=
-dl
+#dl
 summary(dl)
 names( dl2 )
 length(dl3)
