@@ -39,14 +39,15 @@ function(x,
     # Check for parallel element access
     if (is.function(getS3method("pGetElem", class(x), TRUE))) {
         elem <- pGetElem(x)
-        if (!is.null(names(x)))
-            names(elem) <- names(x)
+        # NOTE: DirSource guarantees !is.null(x$uri)
+        names(elem) <- unlist(lapply(elem, function(x) basename(x$uri)))
         tdl <- DMap(as.DList(elem, DStorage = storage), function(keypair) list(key = keypair$key, value = readerControl$reader(keypair$value, readerControl$language, keypair$key)) )
     }
     else
         stop("Non-vectorized operation not yet implemented.")
 
-    names(tdl) <- names(x)
+    # NOTE: DirSource guarantees !is.null(x$uri)
+    names(tdl) <- unlist(lapply(elem, function(x) basename(x$uri)))
     df <- data.frame(row.names = seq_along(tdl))
     cm <- structure(list(), class = "CorpusMeta")
     .DCorpus( tdl, keep, cm, df )
@@ -87,6 +88,8 @@ as.VCorpus.DCorpus <- function(x)
 length.DCorpus <- getS3method("length", "VCorpus")
 
 meta.DCorpus <- getS3method("meta", "VCorpus")
+
+names.DCorpus <- getS3method("names", "VCorpus")
 
 print.DCorpus <- getS3method("print", "VCorpus")
 
