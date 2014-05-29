@@ -30,12 +30,6 @@ function(x,
     if (is.null(readerControl$language))
         readerControl$language <- "en"
 
-    if (is.function(readerControl$init))
-        readerControl$init()
-
-    if (is.function(readerControl$exit))
-        on.exit(readerControl$exit())
-
     # Check for parallel element access
     if (is.function(getS3method("pGetElem", class(x), TRUE))) {
         elem <- pGetElem(x)
@@ -46,8 +40,6 @@ function(x,
     else
         stop("Non-vectorized operation not yet implemented.")
 
-    # NOTE: DirSource guarantees !is.null(x$uri)
-    names(tdl) <- unlist(lapply(elem, function(x) basename(x$uri)))
     df <- data.frame(row.names = seq_along(tdl))
     cm <- structure(list(), class = "CorpusMeta")
     .DCorpus( tdl, keep, cm, df )
