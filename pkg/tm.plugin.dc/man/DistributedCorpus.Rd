@@ -20,13 +20,14 @@ as.DCorpus( x, storage = NULL, ... )
 \arguments{
   \item{x}{for \code{DCorpus}, a \code{\link[tm]{Source}} object. At the
     moment only \code{\link[tm]{DirSource}} is supported. For
-    \code{as.VCorpus()} and  \code{as.DCorpus()}, an object to be coerced
+    \code{as.VCorpus()} and \code{as.DCorpus()}, an object to be coerced
     to a \code{VCorpus}/\code{DCorpus}. Currently coercion from/to
     classic \pkg{tm} corpora (\code{VCorpus}) is implemented.} 
   \item{readerControl}{A list with the named components \code{reader}
     representing a reading function capable of handling the file format
-    found in \code{source}, and \code{language} giving the text's language
-    (preferably as \acronym{IETF} language tags).}
+    found in \code{x}, and \code{language} giving the text's language
+    (preferably as \acronym{IETF} language tags, see \link[NLP]{language} in
+    package \pkg{NLP}).}
   \item{storage}{The storage subsystem to use with the
     DCorpus. Currently two types of storages are supported:
     local disk storage using the Local File System (LFS) and the Hadoop
