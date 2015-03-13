@@ -47,14 +47,16 @@ hive_set_slaves <- function(slaves, henv){
 
 ## FIXME: con argument
 get_hadoop_config <- function(x, dir){
-  if( !file.exists(file.path(dir, x)) )
-    out <- NA
-  else {
-    infile <- xmlRoot(xmlTreeParse(file.path(dir, x)))
-    out <- hadoop_parse_xml(infile, "value")
-    names(out) <- hadoop_parse_xml(infile, "name")
-  }
-  out
+    if( !file.exists(file.path(dir, x)) )
+        out <- NA
+    else {
+        infile <- xmlRoot(xmlTreeParse(file.path(dir, x)))
+        ind_prop <- unlist(xmlApply(infile, xmlName) == "property")
+        prop_names <- hadoop_parse_xml(infile[ind_prop], "name")
+        out <- hadoop_parse_xml(infile[ind_prop], "value")
+        names(out) <- prop_names
+    }
+    out
 }
 
 ## returns the right function for coercion
@@ -70,11 +72,9 @@ hadoop_xml_return_type <- function(x){
 
 ## parse values from xml tree
 hadoop_parse_xml <- function(x, what){
-  as_type <- hadoop_xml_return_type(what)
-  as_type(unlist(xmlApply(x, function(x){
-    if(xmlName(x) == "property"){xmlApply(x, function(x){if(xmlName(x) == what) {out <- xmlValue(x)
-                                                                                 if(!length(out))
-                                                                                 out <- ""
-                                                                                 out}})}
-  })))
+    as_type <- hadoop_xml_return_type(what)
+    as_type( unlist(lapply(x, function(x) {out <- xmlValue(x[[what]])
+                                           if(!length(out))
+                                               out<-NA
+                                           out})) )
 }
