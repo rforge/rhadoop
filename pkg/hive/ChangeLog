@@ -1,3 +1,7 @@
+2015-07-02  Stefan Theussl  <stefan.theussl@R-project.org>
+
+	* Hadoop 2.6/2.7 compatible
+
 2011-11-29  Stefan Theussl  <stefan.theussl@wu.ac.at>
 
 	* R/streaming.R (hive_stream): accepts now a streaming_args argument.

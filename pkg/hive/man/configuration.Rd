@@ -51,7 +51,7 @@ hive_set_nreducer( n, henv = hive() )
 }
 \references{
   Apache Hadoop cluster configuration
-  (\url{http://hadoop.apache.org/common/docs/current/cluster_setup.html#Configuration+Files}).  
+  (\url{https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/ClusterSetup.html#Configuring_Hadoop_in_Non-Secure_Mode}).  
 }
 \author{Stefan Theussl}
 %\seealso{

@@ -127,7 +127,7 @@ DFS_write_lines( text, file, henv = hive() )
   
 }
 \references{
-  The Hadoop Distributed File System (\url{http://hadoop.apache.org/hdfs/}).  
+  The Hadoop Distributed File System (\url{https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/HdfsDesign.html}).  
 }
 
 \author{Stefan Theussl}

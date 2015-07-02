@@ -43,7 +43,7 @@ streaming_args = NULL)
 %}
 \references{
   Apache Hadoop Streaming
-  (\url{http://hadoop.apache.org/common/docs/current/streaming.html}).
+  (\url{https://hadoop.apache.org/docs/current/hadoop-streaming/HadoopStreaming.html}).
 }
 
 \author{Stefan Theussl}
