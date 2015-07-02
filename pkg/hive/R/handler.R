@@ -90,19 +90,21 @@ hive_create <- function( hadoop_home ){
               commonsconfigurationjar <- grep( "commons-configuration-[0-9].*[.]jar", dir(file.path(hadoop_lib)), value = TRUE )
               commonslangjar <- grep( "commons-lang-[0-9].*[.]jar", dir(hadoop_lib), value = TRUE )
               commonscli <- grep( "commons-cli-[0-9].*[.]jar", dir(hadoop_lib), value = TRUE )
+              commonsiojar <- grep( "commons-io-[0-9].*[.]jar", dir(hadoop_lib), value = TRUE )
               guavajar <- grep( "guava-[0-9].*[.]jar", dir(hadoop_tools), value = TRUE )
               commonscollectionsjar <- grep( "commons-collections-[0-9].*[.]jar", dir(hadoop_tools), value = TRUE )
               hadoop_auth <- sprintf( "hadoop-auth-%s.jar", hvers )
               slf4jjar <- grep( "slf4j-api-[0-9].*[.]jar", dir(hadoop_lib), value = TRUE )
               slf4jlogjar <- grep( "slf4j-log4j12-[0-9].*[.]jar", dir(hadoop_lib), value = TRUE )
-              log4jjar <- grep( "log4j-[0-9].*[.]jar", dir(hadoop_lib), value = TRUE )
+              servletjar <- grep( "servlet-api-[0-9].*[.]jar", dir(hadoop_lib), value = TRUE )
+              log4jjar <- grep( "log4j-[0-9].*[.]jar", dir(hadoop_tools), value = TRUE )
               protobufjavajar <- grep( "protobuf-java-[0-9].*[.]jar", dir(hadoop_lib), value = TRUE )
               htracejar <- grep("htrace-core-[0-9].*[.]jar", dir(hadoop_lib), value = TRUE )
               hadoop_jars <- c( file.path(hadoop_common, c(sprintf("hadoop-common-%s.jar", hvers))),
                                 file.path(hadoop_hdfs, c(sprintf("hadoop-hdfs-%s.jar", hvers))),
                                 file.path(hadoop_mapreduce, c(sprintf("hadoop-mapreduce-client-common-%s.jar", hvers))),
-                                file.path(hadoop_lib, c(commonscli, commonsloggingjar, commonsconfigurationjar, commonslangjar)),
-                                file.path(hadoop_tools, c(guavajar, commonscollectionsjar, hadoop_auth)),
+                                file.path(hadoop_lib, c(commonscli, commonsloggingjar, commonsconfigurationjar, commonslangjar, commonsiojar)),
+                                file.path(hadoop_tools, c(guavajar, commonscollectionsjar, hadoop_auth, servletjar)),
                                 file.path(hadoop_lib, c(slf4jjar, slf4jlogjar, log4jjar, protobufjavajar, htracejar)) )
               stopifnot( all(file.exists(hadoop_jars)) )
               
