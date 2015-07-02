@@ -17,7 +17,7 @@ DGather( x, keys = FALSE, n = -1L, names = TRUE )
 }
 \details{
   \code{DGather()} is similar to an \code{MPI_GATHER} (see
-  \url{http://www.mpi-forum.org/docs/mpi22-report/node95.htm#Node95})
+  \url{http://www.mpi-forum.org/docs/mpi-3.1/mpi31-report/node103.htm#Node103})
   where: \dQuote{[...] each process (root process included) sends the
   contents of its send buffer to the root process. The root process
   receives the messages and stores them in rank order.} For

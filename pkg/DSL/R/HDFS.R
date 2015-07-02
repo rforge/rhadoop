@@ -58,7 +58,7 @@
 
         chunk <- NA
         while (length(line <- readLines(con, n = 1L, warn = FALSE)) > 0) {
-            input <- DSL:::DSL_split_line( line )
+            input <- getFunction("DSL_split_line", where = getNamespace("DSL"))( line )
             if( length(grep("^<<EOF-", input$key)) ){
                 chunk <- as.character(input$value["Chunk"])
                 break
@@ -69,15 +69,15 @@
             ## FIXME: should be an object oriented approach here (associative array vs dictionary)
             if( length(result) > 2 )
                 for( i in seq_along(result) )
-                    writeLines( sprintf("%s\t%s", result[[i]]$key, DSL:::DSL_serialize_object(result[[i]]$value)) )
+                    writeLines( sprintf("%s\t%s", result[[i]]$key, getFunction("DSL_serialize_object", where = getNamespace("DSL"))(result[[i]]$value)) )
             else
-                writeLines( sprintf("%s\t%s", result$key, DSL:::DSL_serialize_object(result$value)) )
+                writeLines( sprintf("%s\t%s", result$key, getFunction("DSL_serialize_object", where = getNamespace("DSL"))(result$value)) )
         }
 
         ## In the last step we need to add a stamp to this chunk
         ## <key:randomstring, value_serialized:c(firstdocumentkey,lastdocumentkey)>
         if( !is.na(chunk) )
-            writeLines( DSL:::.make_chunk_signature( chunk ) )
+            writeLines( getFunction(".make_chunk_signature", where = getNamespace("DSL"))( chunk ) )
 
         close(con)
 
@@ -123,7 +123,7 @@
         ## use efficient collector for integer pairlists
         CONCATENATE <- function( collector = FALSE )
             if( collector ){
-                DSL:::.collector2
+                getFunction(".collector2", where = getNamespace("DSL"))
             } else {
                 base::c
             }
@@ -140,7 +140,7 @@
         ## STREAM
 
         while( length(line <- readLines(con, n = 1L, warn = FALSE)) > 0 ) {
-            input <- DSL:::DSL_split_line( line )
+            input <- getFunction("DSL_split_line", where = getNamespace("DSL"))( line )
             ## Skip end of line
             if( length(grep("^<<EOF-", input$key)) ){
                 chunk <- as.character(input$value["Chunk"])
@@ -170,13 +170,13 @@
         env <- as.list(env)
         if(!is.null(INTPAIRLIST))
             if( INTPAIRLIST ){
-                env <- lapply(env, DSL:::.collector2, NULL)
+                env <- lapply(env, getFunction(".collector2", where = getNamespace("DSL")), NULL)
             }
         keys <- names(env)
         for( i in seq_along(keys) )
             writeLines( sprintf("%s\t%s", keys[i],
-                                DSL:::DSL_serialize_object(REDUCE(env[[ i ]]))) )
-        writeLines( DSL:::.make_chunk_signature( chunk ) )
+                                getFunction("DSL_serialize_object", where = getNamespace("DSL"))(REDUCE(env[[ i ]]))) )
+        writeLines( getFunction(".make_chunk_signature", where = getNamespace("DSL"))( chunk ) )
     }
 }
 

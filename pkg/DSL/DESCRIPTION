@@ -1,8 +1,9 @@
 Package: DSL
-Version: 0.1-5
-Date: 2014-02-21
+Version: 0.1-6
+Date: 2015-07-02
 Title: Distributed Storage and List
-Description: A package providing functions and methods for handling distributed storage (DStorage) and lists (DLlist). It implements an abstract DList class for storing large list-type objects in a distributed manner. In doing so it uses a well defined storage backend implemented based on the DStorage class. It allows for processing such DLists on distributed systems efficiently.
+Description: An abstract DList class helps storing large list-type objects in a distributed manner. Corresponding high-level functions and methods for handling distributed storage (DStorage) and lists allows for processing such DLists on distributed systems efficiently. In doing so it uses a well defined storage backend implemented based on the DStorage class.
 Authors@R: c(person("Ingo", "Feinerer", role = "aut"), person("Stefan", "Theussl", role = c("aut", "cre"), email = "Stefan.Theussl@R-project.org"), person("Christian", "Buchta", role = "ctb"))
 License: GPL-3
+Imports: methods, utils
 Suggests: hive (>= 0.1-14), parallel

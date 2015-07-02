@@ -5,6 +5,10 @@
 ## collector in C-code
 useDynLib( "DSL" )
 
+## imports
+importFrom("methods", "getFunction")
+importFrom("utils", "object.size")
+
 ## DList constructor
 export( "DList" )
 
