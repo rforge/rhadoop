@@ -77,6 +77,8 @@ as.VCorpus.DCorpus <- function(x)
                    dmeta = meta(x, type = "indexed")),
               class = c("VCorpus", "Corpus"))
 
+format.DCorpus <- getS3method("format", "VCorpus")
+
 length.DCorpus <- getS3method("length", "VCorpus")
 
 meta.DCorpus <- getS3method("meta", "VCorpus")
