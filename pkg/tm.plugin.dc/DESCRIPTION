@@ -1,7 +1,7 @@
 Package: tm.plugin.dc
 Version: 0.2-8
-Date: 2015-08-28
-Title: Text Mining Distributed Corpus Plug-In
+Date: 2015-09-12
+Title: Text Mining Distributed Corpus Plug-in
 Description: A plug-in for the text mining framework tm to support text mining 
              in a distributed way. The package provides a convenient interface for
              handling distributed corpus objects based on distributed list objects.
