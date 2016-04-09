@@ -96,7 +96,7 @@ hive_create <- function( hadoop_home ){
               hadoop_auth <- sprintf( "hadoop-auth-%s.jar", hvers )
               slf4jjar <- grep( "slf4j-api-[0-9].*[.]jar", dir(hadoop_lib), value = TRUE )
               slf4jlogjar <- grep( "slf4j-log4j12-[0-9].*[.]jar", dir(hadoop_lib), value = TRUE )
-              servletjar <- grep( "servlet-api-[0-9].*[.]jar", dir(hadoop_lib), value = TRUE )
+              servletjar <- grep( "servlet-api-[0-9].*[.]jar", dir(hadoop_tools), value = TRUE )
               log4jjar <- grep( "log4j-[0-9].*[.]jar", dir(hadoop_tools), value = TRUE )
               protobufjavajar <- grep( "protobuf-java-[0-9].*[.]jar", dir(hadoop_lib), value = TRUE )
               htracejar <- grep("htrace-core-[0-9].*[.]jar", dir(hadoop_lib), value = TRUE )
