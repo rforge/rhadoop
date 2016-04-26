@@ -1,6 +1,6 @@
 Package: hive
-Version: 0.2-0
-Date: 2015-07-02
+Version: 0.2-1
+Date: 2016-04-26
 Title: Hadoop InteractiVE
 Description: Hadoop InteractiVE facilitates distributed 
              computing via the MapReduce paradigm through R and Hadoop. An easy to use 
@@ -11,4 +11,4 @@ License: GPL-3
 Imports: rJava (>= 0.9-3), tools, XML
 Depends: R (>= 2.9.0)
 Enhances: HadoopStreaming
-SystemRequirements: Apache Hadoop >= 2.6.0 (https://hadoop.apache.org/releases.html#Download); Obsolete: Hadoop core >= 0.19.1 and <= 1.0.3 or CDH3 (http://www.cloudera.com); standard unix tools (e.g., chmod)
+SystemRequirements: Apache Hadoop >= 2.7.2 (https://hadoop.apache.org/releases.html#Download); Obsolete: Hadoop core >= 0.19.1 and <= 1.0.3 or CDH3 (http://www.cloudera.com); standard unix tools (e.g., chmod)

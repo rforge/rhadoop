@@ -23,12 +23,12 @@ hive_stream <- function( mapper, reducer, input, output, henv = hive(),
   stopifnot( file.exists(mapper_exec) )
   ## now the reducer (if available)
   reducer_exec <- NULL
-  if( is.null(streaming_args) )
-      streaming_args <- "-D mapred.reduce.tasks=0"
+  if( is.null(reducer) )
+      streaming_args <- paste("-D mapreduce.job.reduces=0", streaming_args, collapse = " " )
   if( !is.null(reducer) ){
     .hadoop_check_function_sanity( reducer )
     ## set additional args to Hadoop Streaming
-    streaming_args <- paste( sprintf("-D mapred.reduce.tasks=%d", hive_get_nreducer(henv)), streaming_args, collapse = " " )
+    streaming_args <- paste(sprintf("-D mapreduce.job.reduces=%d", hive_get_nreducer(henv)), streaming_args, collapse = " " )
     reducer_exec <- .generate_executable( reducer, .get_hadoop_executable(type = "reducer") )
     stopifnot( file.exists(reducer_exec) )
   }
@@ -48,7 +48,7 @@ hive_stream <- function( mapper, reducer, input, output, henv = hive(),
 
 .hadoop_streaming <- function( mapper, reducer, input, output, mapper_args, reducer_args,
                                streaming_args, cmdenv_arg, henv ){
-  files <- paste( unique(c("", mapper, reducer)), collapse = " -file " )
+  files <-  paste( unique(c("", mapper, reducer)), collapse = " -file " )#sprintf(" -files %s", paste( unique(c(mapper, reducer)), collapse = "," ))
   mapper_arg <- sprintf( "-mapper '%s %s'", mapper, as.character(mapper_args) )
   reducer_arg <- ""
   #writeLines(sprintf("DEBUG: reducer: %s", as.character(!is.null(reducer))))
