@@ -68,12 +68,12 @@ require( "tm" )
 require( "tm.corpus.Reuters21578" )
 data( Reuters21578 )
 
-Reuters21578[[1]]
-meta(Reuters21578[[1]])
+content( Reuters21578[[1]] )
+meta( Reuters21578[[1]] )
 
 seqt <- system.time( l <- lapply( Reuters21578, stemDocument ) )["elapsed"]
 
-l[[1]]
+content( l[[1]] )
 
 ## now in parallel
 part <- system.time( l <- mclapply( Reuters21578, stemDocument, mc.cores = ncores ) )["elapsed"]
