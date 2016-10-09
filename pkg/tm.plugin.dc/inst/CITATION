@@ -1,4 +1,4 @@
-citHeader("To cite tm in publications use:")
+citHeader("To cite tm.plugin.dc in publications use:")
 
 citEntry(entry = "Article",
   title        = "A {tm} Plug-In for Distributed Text Mining in {R}",
