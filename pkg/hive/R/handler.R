@@ -32,6 +32,14 @@ hive_create <- function( hadoop_home ){
 .hadoop_home_dirs <- function(){
   c("/etc/hadoop")
 }
+
+.hadoop_bin_absolute <- function(hadoop_home){
+    if( utils::file_test("-x", file.path(hadoop_home, "bin", "hadoop")) )
+        file.path(hadoop_home, "bin", "hadoop")
+    else
+        Sys.which("hadoop")
+}
+
 ## Given a pointer to a Hadoop installation directory, this function
 ## creates an environment containing all information about the Hadoop
 ## cluster.  We store the hadoop home directory, the hadoop version,
@@ -51,7 +59,7 @@ hive_create <- function( hadoop_home ){
   ## OLD CONFIG: config files have been split up and located in different places since version 0.20.0
   if( hvers < "0.20.0" ){
       local( {
-          hadoop <- file.path(hadoop_home, "bin", "hadoop")
+          hadoop <- .hadoop_bin_absolute(hadoop_home)
           version <- hvers
           stopifnot(file.exists(hadoop))
           config_files <- list(hadoop_default = get_hadoop_config("hadoop-default.xml", file.path(hadoop_home,"conf")),
@@ -59,7 +67,7 @@ hive_create <- function( hadoop_home ){
                                 slaves = readLines(file.path(hadoop_home, "conf", "slaves")),
                                 masters = readLines(file.path(hadoop_home, "conf", "masters")))
       }, hive )
-      
+
   } else {
   ## CURRENT CONFIGS
       if( hvers >= "2.6.0" ) {
@@ -70,14 +78,11 @@ hive_create <- function( hadoop_home ){
           hadoop_hdfs      <- file.path( hadoop_home, "share", "hadoop","hdfs" )
           hadoop_tools     <- file.path( hadoop_home, "share", "hadoop","tools", "lib" )
           local( {
-              hadoop <- if( utils::file_test("-x", file.path(hadoop_home, "bin", "hadoop")) )
-                            file.path(hadoop_home, "bin", "hadoop")
-                        else
-                            Sys.which("hadoop")
+              hadoop <- .hadoop_bin_absolute(hadoop_home)
               version <- hvers
               stopifnot(file.exists(hadoop))
-              
-              config_files <- list(core_default = get_hadoop_config("core-default.xml", file.path(hadoop_src, "hadoop-project-dist", "hadoop-common")),                          
+
+              config_files <- list(core_default = get_hadoop_config("core-default.xml", file.path(hadoop_src, "hadoop-project-dist", "hadoop-common")),
                                    core_site = get_hadoop_config("core-site.xml", file.path(hadoop_home, "etc", "hadoop")),
                                    hdfs_default = get_hadoop_config("hdfs-default.xml", file.path(hadoop_src, "hadoop-project-dist", "hadoop-hdfs")),
                                    hdfs_site = get_hadoop_config("hdfs-site.xml", file.path(hadoop_home, "etc", "hadoop")),
@@ -85,29 +90,39 @@ hive_create <- function( hadoop_home ){
                                    mapred_site = get_hadoop_config("mapred-site.xml", file.path(hadoop_home, "etc", "hadoop")),
                                    slaves = suppressWarnings(tryCatch(readLines(file.path(hadoop_home, "etc", "hadoop", "slaves")), error = function(x) NA)),
                                    masters = suppressWarnings(tryCatch(readLines(file.path(hadoop_home, "etc", "hadoop", "masters")), error = function(x) NA)))
-              
+
               commonsloggingjar       <- grep( "commons-logging-[0-9].*[.]jar", dir(hadoop_lib), value = TRUE )
               commonsconfigurationjar <- grep( "commons-configuration-[0-9].*[.]jar", dir(file.path(hadoop_lib)), value = TRUE )
+              if(!length(commonsconfigurationjar))
+                  commonsconfigurationjar <- grep( "commons-configuration2-[0-9].*[.]jar", dir(file.path(hadoop_lib)), value = TRUE )
               commonslangjar <- grep( "commons-lang-[0-9].*[.]jar", dir(hadoop_lib), value = TRUE )
+              if(!length(commonslangjar))
+                  commonslangjar <- grep( "commons-lang3-[0-9].*[.]jar", dir(hadoop_lib), value = TRUE )
               commonscli <- grep( "commons-cli-[0-9].*[.]jar", dir(hadoop_lib), value = TRUE )
               commonsiojar <- grep( "commons-io-[0-9].*[.]jar", dir(hadoop_lib), value = TRUE )
-              guavajar <- grep( "guava-[0-9].*[.]jar", dir(hadoop_tools), value = TRUE )
-              commonscollectionsjar <- grep( "commons-collections-[0-9].*[.]jar", dir(hadoop_tools), value = TRUE )
+              guavajar <- grep( "guava-[0-9].*[.]jar", dir(hadoop_lib), value = TRUE ) # in lib since at least version 2.10 and 3.2.1
+              commonscollectionsjar <- grep( "commons-collections-[0-9].*[.]jar", dir(hadoop_lib), value = TRUE ) # in lib since at least version 2.10 and 3.2.1
               hadoop_auth <- sprintf( "hadoop-auth-%s.jar", hvers )
               slf4jjar <- grep( "slf4j-api-[0-9].*[.]jar", dir(hadoop_lib), value = TRUE )
               slf4jlogjar <- grep( "slf4j-log4j12-[0-9].*[.]jar", dir(hadoop_lib), value = TRUE )
-              servletjar <- grep( "servlet-api-[0-9].*[.]jar", dir(hadoop_tools), value = TRUE )
-              log4jjar <- grep( "log4j-[0-9].*[.]jar", dir(hadoop_tools), value = TRUE )
+              servletjar <- grep( "servlet-api-[0-9].*[.]jar", dir(hadoop_lib), value = TRUE ) # in lib since at least version 2.10 and 3.2.1
+              log4jjar <- grep( "log4j-[0-9].*[.]jar", dir(hadoop_lib), value = TRUE ) # in lib since at least version 2.10 and 3.2.1
               protobufjavajar <- grep( "protobuf-java-[0-9].*[.]jar", dir(hadoop_lib), value = TRUE )
               htracejar <- grep("htrace-core-[0-9].*[.]jar", dir(hadoop_lib), value = TRUE )
-              hadoop_jars <- c( file.path(hadoop_common, c(sprintf("hadoop-common-%s.jar", hvers))),
+              if(!length(htracejar))
+                  htracejar <- grep("htrace-core4-[0-9].*[.]jar", dir(hadoop_lib), value = TRUE )
+              woodstoxjar <- grep("woodstox-core-[0-9].*[.]jar", dir(hadoop_lib), value = TRUE )
+              staxjar <- grep("stax2-api-[0-9].*[.]jar", dir(hadoop_lib), value = TRUE )
+              hadoop_jars <- c( file.path(hadoop_lib, c(commonscli, commonsloggingjar, commonsconfigurationjar, commonslangjar, commonsiojar)),
+                                file.path(hadoop_lib, c(guavajar, commonscollectionsjar, hadoop_auth, servletjar, woodstoxjar, staxjar)), # in lib since at least version 2.10 and 3.2.1
+                                file.path(hadoop_lib, c(slf4jjar, slf4jlogjar, log4jjar, protobufjavajar, htracejar)),
+                                file.path(hadoop_common, c(sprintf("hadoop-common-%s.jar", hvers))),
                                 file.path(hadoop_hdfs, c(sprintf("hadoop-hdfs-%s.jar", hvers))),
-                                file.path(hadoop_mapreduce, c(sprintf("hadoop-mapreduce-client-common-%s.jar", hvers))),
-                                file.path(hadoop_lib, c(commonscli, commonsloggingjar, commonsconfigurationjar, commonslangjar, commonsiojar)),
-                                file.path(hadoop_tools, c(guavajar, commonscollectionsjar, hadoop_auth, servletjar)),
-                                file.path(hadoop_lib, c(slf4jjar, slf4jlogjar, log4jjar, protobufjavajar, htracejar)) )
+                                file.path(hadoop_hdfs, c(sprintf("hadoop-hdfs-client-%s.jar", hvers))),
+                                file.path(hadoop_mapreduce, c(sprintf("hadoop-mapreduce-client-common-%s.jar", hvers)))
+  )
               stopifnot( all(file.exists(hadoop_jars)) )
-              
+
       }, hive )
   } else {
       ## VERSION 1.0 CONFIGS
@@ -119,10 +134,7 @@ hive_create <- function( hadoop_home ){
           hadoop_src <- system.file("defaults", package = "hive")
       }
       local( {
-          hadoop <- if( utils::file_test("-x", file.path(hadoop_home, "bin", "hadoop")) )
-              file.path(hadoop_home, "bin", "hadoop")
-          else
-              Sys.which("hadoop")
+          hadoop <- .hadoop_bin_absolute(hadoop_home)
           version <- hvers
           stopifnot(file.exists(hadoop))
 
@@ -135,7 +147,7 @@ hive_create <- function( hadoop_home ){
                                 slaves = suppressWarnings(tryCatch(readLines(file.path(hadoop_home, "conf", "slaves")), error = function(x) NA)),
                                 masters = suppressWarnings(tryCatch(readLines(file.path(hadoop_home, "conf", "masters")), error = function(x) NA)))
 
-      
+
           ## FIXME: Debian packages not available anymore, thus using CDH paths
           ## hadoop_jars <- file.path("/usr/share/java/", c("hadoop-core.jar", "commons-logging.jar"))
           commonsloggingjar <- grep("commons-logging-[0-9].*[.]jar", dir(file.path("/usr/lib/hadoop", "lib")), value = TRUE)
@@ -271,7 +283,7 @@ hadoop_get_version <- function( hadoop_home ){
   if( file.exists( version_file ) )
     readLines( version_file )
   else
-    gsub("Hadoop ", "", system("hadoop version", intern = TRUE, ignore.stderr = TRUE)[1])
+    gsub("Hadoop ", "", system(sprintf("%s version", .hadoop_bin_absolute(hadoop_home)), intern = TRUE, ignore.stderr = TRUE)[1])
 }
 
 ## Controlling the Hadoop framework: currently using the start/stop_all.sh scripts

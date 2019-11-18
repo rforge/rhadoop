@@ -38,7 +38,7 @@ hive_is_available( henv = hive() )
   retrieves most configuration options via searching the
   \code{HADOOP_HOME} directory given as an environment variable, or,
   alternatively, by searching the \code{/etc/hadoop} directory in case
-  the \url{http://www.cloudera.com} distribution (i.e., CDH3) is used.
+  the \url{https://www.cloudera.com} distribution (i.e., CDH3) is used.
 
   The functions \code{hive_start()} and \code{hive_stop()} are used to
   start/stop the Hadoop framework. The latter is not applicable for
@@ -57,10 +57,10 @@ hive_is_available( henv = hive() )
   
 }
 \references{
-  Apache Hadoop core: \url{http://hadoop.apache.org/core/}.
+  Apache Hadoop: \url{https://hadoop.apache.org/}.
   
   Cloudera's distribution including Apache Hadoop (CDH):
-  \url{http://www.cloudera.com/}.
+  \url{https://www.cloudera.com/downloads/cdh.html}.
   
 }
 

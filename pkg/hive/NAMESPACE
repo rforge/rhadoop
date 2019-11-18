@@ -1,6 +1,7 @@
 importFrom("tools", "file_path_as_absolute")
 importFrom("rJava", ".jaddClassPath", ".jcall", ".jcast", ".jclassLoader", ".jclassPath", ".jengine", ".jinit", ".jlong", ".jnew", ".jnull", ".jpackage")
 importFrom("XML", "xmlApply", "xmlName", "xmlRoot", "xmlTreeParse", "xmlValue")
+importFrom("methods", "functionBody")
 
 export(## the hive
        "hive",
