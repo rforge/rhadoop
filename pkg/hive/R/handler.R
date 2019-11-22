@@ -88,6 +88,7 @@ hive_create <- function( hadoop_home ){
                                    hdfs_site = get_hadoop_config("hdfs-site.xml", file.path(hadoop_home, "etc", "hadoop")),
                                    mapred_default = get_hadoop_config("mapred-default.xml", file.path(hadoop_src, "hadoop-mapreduce-client", "hadoop-mapreduce-client-core")),
                                    mapred_site = get_hadoop_config("mapred-site.xml", file.path(hadoop_home, "etc", "hadoop")),
+                                   log4j_properties = get_hadoop_config("log4j.properties", file.path(hadoop_home, "etc", "hadoop")),
                                    slaves = suppressWarnings(tryCatch(readLines(file.path(hadoop_home, "etc", "hadoop", "slaves")), error = function(x) NA)),
                                    masters = suppressWarnings(tryCatch(readLines(file.path(hadoop_home, "etc", "hadoop", "masters")), error = function(x) NA)))
 

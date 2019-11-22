@@ -16,6 +16,7 @@ add_java_DFS_support <- function(henv){
         hdfs_site    <- .jnew( "org/apache/hadoop/fs/Path", file.path(hadoop_home(henv), "etc", "hadoop", "hdfs-site.xml"))
         mapred_default <- .jnew( "org/apache/hadoop/fs/Path", file.path(hadoop_src, "hadoop-mapreduce-client", "hadoop-mapreduce-client-core", "mapred-default.xml") )
         mapred_site  <- .jnew( "org/apache/hadoop/fs/Path", file.path(hadoop_home(henv), "etc", "hadoop", "mapred-site.xml"))
+        log4j_properties  <- .jnew( "org/apache/hadoop/fs/Path", file.path(hadoop_home(henv), "etc", "hadoop", "log4j.properties"))
     } else {
         ## add paths to Hadoop configuration files
         core_default <- .jnew("org/apache/hadoop/fs/Path", file.path(hadoop_home(henv), "src", "core", "core-default.xml"))
@@ -32,8 +33,8 @@ add_java_DFS_support <- function(henv){
     .jcall(configuration, "V", "addResource", hdfs_site)
     .jcall(configuration, "V", "addResource", mapred_default)
     .jcall(configuration, "V", "addResource", mapred_site)
+    .jcall(configuration, "V", "addResource", log4j_properties)
     
-
   ## Update class loader
   jcl <- .jclassLoader()
   .jcall(configuration, "V", "setClassLoader", .jcast(jcl, "java/lang/ClassLoader"))
