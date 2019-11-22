@@ -183,9 +183,8 @@ print.hive <- function( x, ... ){
   writeLines( "HIVE: Hadoop Cluster" )
   writeLines( sprintf("- Avail. datanodes: %d", length(hive_get_workers(x))) )
   writeLines( sprintf("'- Max. number Map tasks per datanode: %s",
-                      ifelse( hadoop_version(x) >= "2.6.0",
-                             hive_get_parameter("mapreduce.tasktracker.map.tasks.maximum", x),
-                             hive_get_parameter("mapred.tasktracker.map.tasks.maximum", x))) )
+                      if( hadoop_version(x) >= "3.2.1" ) { hive_get_parameter("mapreduce.job.maps", x) } else { if(hadoop_version(x) >= "2.6.0") {
+                             hive_get_parameter("mapreduce.tasktracker.map.tasks.maximum", x) } else {hive_get_parameter("mapred.tasktracker.map.tasks.maximum", x)}}) )
   writeLines( sprintf("'- Configured Reducer tasks: %d",
                       hive_get_nreducer(x)) )
 }

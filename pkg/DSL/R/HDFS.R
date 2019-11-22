@@ -191,7 +191,7 @@
     ## separate parts for MapReduce jobs. Hadoop is doing this
     ## automatically unless we set the "mapred.min.split.size"
     ## properly. We set it to the overall block size
-    blocksize <- hive::hive_get_parameter("dfs.block.size")
+    blocksize <- hive::hive_get_parameter("dfs.blocksize") ## requires Hadoop 3.2.1 and $HADOOP_HOME/share/doc directory
 
     streaming_args <- sprintf( "-Dmapred.min.split.size=%s", blocksize )
     if( is.null(REDUCE) )
