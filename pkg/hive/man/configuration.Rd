@@ -1,6 +1,6 @@
 \name{configuration}
 \alias{hive_get_parameter}
-\alias{hive_get_slaves}
+\alias{hive_get_workers}
 \alias{hive_get_masters}
 \alias{hive_get_nreducer}
 \alias{hive_set_nreducer}
@@ -14,7 +14,7 @@
 \usage{
 hive_get_parameter( x, henv = hive() )
 hive_get_masters( henv = hive() )
-hive_get_slaves( henv = hive() )
+hive_get_workers( henv = hive() )
 hive_get_nreducer( henv = hive() )
 hive_set_nreducer( n, henv = hive() )
 }
@@ -29,7 +29,7 @@ hive_set_nreducer( n, henv = hive() )
   The function \code{hive_get_parameter()} is used to get parameters from
   the Hadoop cluster configuration.
 
-  The functions \code{hive_get_slaves()} and \code{hive_get_masters()}
+  The functions \code{hive_get_workers()} and \code{hive_get_masters()}
   return the hostnames of the configured nodes in the cluster. 
 
   The functions \code{hive_get_nreducer()} and \code{hive_set_nreducer()}
@@ -40,7 +40,7 @@ hive_set_nreducer( n, henv = hive() )
 \value{
   \code{hive_get_parameter()} returns the specified parameter as a character string.
   
-  \code{hive_get_slaves()} returns a character vector naming the hostnames
+  \code{hive_get_workers()} returns a character vector naming the hostnames
   of the configured worker nodes in the cluster.
 
   \code{hive_get_masters()} returns a character vector of the hostnames of
@@ -67,7 +67,7 @@ hive_set_nreducer( n, henv = hive() )
 \dontrun{hive_get_masters()}
 
 ## The worker nodes of the cluster
-\dontrun{hive_get_slaves()}
+\dontrun{hive_get_workers()}
 
 ## The number of configured reducers
 \dontrun{hive_get_nreducer()}

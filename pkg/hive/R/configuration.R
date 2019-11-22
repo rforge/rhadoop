@@ -21,8 +21,8 @@ hive_get_parameter <- function(x, henv = hive()){
     out
 }
 
-hive_get_slaves <- function(henv = hive()){
- .hadoop_configuration("slaves", henv)
+hive_get_workers <- function(henv = hive()){
+ .hadoop_configuration("workers", henv)
 }
 
 hive_get_masters <- function(henv = hive()){
@@ -36,10 +36,10 @@ hive_get_masters <- function(henv = hive()){
 ## Setters
 
 ## FIXME: not updated yet
-hive_set_slaves <- function(slaves, henv){
+hive_set_workers <- function(workers, henv){
   hive_stop(henv)
-  slave_conf <- file.path(hadoop_home(henv), "conf", "slaves")
-  writeLines(slaves, con = slave_conf)
+  worker_conf <- file.path(hadoop_home(henv), "conf", "workers")
+  writeLines(workers, con = worker_conf)
   hive_start(henv)
 }
 

@@ -32,7 +32,7 @@ export(## the hive
        "hive_get_parameter",
        "hive_get_masters",
        "hive_get_nreducer",
-       "hive_get_slaves",
+       "hive_get_workers",
        "hive_set_nreducer")
 
 S3method("print", "hive")

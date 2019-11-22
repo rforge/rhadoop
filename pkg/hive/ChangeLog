@@ -1,3 +1,10 @@
+2019-11-23  Stefan Theussl  <stefan.theussl@R-project.org>
+
+	* Changed terminology: workers
+	* Added $HADOOP_HOME/etc/hadoop to java class path, since file
+	log4js.properties is needed upon instantiation
+	* Hadoop 3.2.1 compatible
+
 2015-07-02  Stefan Theussl  <stefan.theussl@R-project.org>
 
 	* Hadoop 2.6/2.7 compatible

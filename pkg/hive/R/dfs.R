@@ -322,7 +322,7 @@ DFS_get_object <- function( file, henv = hive() ) {
 .DFS_format <- function(henv){
   ##machines, DFS_root= "/var/tmp/hadoop"
   stopifnot(hive_stop(henv))
-  machines <- unique(c(hive_get_slaves(henv), hive_get_masters(henv)))
+  machines <- unique(c(hive_get_workers(henv), hive_get_masters(henv)))
   DFS_root <- gsub("\\$\\{user.name\\}", system("whoami", intern = TRUE),
                    hive_get_parameter("hadoop.tmp.dir", henv))
   for(machine in machines){

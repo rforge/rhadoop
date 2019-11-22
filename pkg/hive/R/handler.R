@@ -64,7 +64,7 @@ hive_create <- function( hadoop_home ){
           stopifnot(file.exists(hadoop))
           config_files <- list(hadoop_default = get_hadoop_config("hadoop-default.xml", file.path(hadoop_home,"conf")),
                                hadoop_site = get_hadoop_config("hadoop-site.xml", file.path(hadoop_home,"conf")),
-                                slaves = readLines(file.path(hadoop_home, "conf", "slaves")),
+                                workers = readLines(file.path(hadoop_home, "conf", "slaves")),
                                 masters = readLines(file.path(hadoop_home, "conf", "masters")))
       }, hive )
 
@@ -89,7 +89,7 @@ hive_create <- function( hadoop_home ){
                                    mapred_default = get_hadoop_config("mapred-default.xml", file.path(hadoop_src, "hadoop-mapreduce-client", "hadoop-mapreduce-client-core")),
                                    mapred_site = get_hadoop_config("mapred-site.xml", file.path(hadoop_home, "etc", "hadoop")),
                                    log4j_properties = suppressWarnings(tryCatch(readLines(file.path(hadoop_home, "etc", "hadoop", "log4j.properties")), error = function(x) NA)),
-                                   slaves = suppressWarnings(tryCatch(readLines(file.path(hadoop_home, "etc", "hadoop", "slaves")), error = function(x) NA)),
+                                   workers = suppressWarnings(tryCatch(readLines(file.path(hadoop_home, "etc", "hadoop", "workers")), error = function(x) NA)),
                                    masters = suppressWarnings(tryCatch(readLines(file.path(hadoop_home, "etc", "hadoop", "masters")), error = function(x) NA)))
 
               commonsloggingjar       <- grep( "commons-logging-[0-9].*[.]jar", dir(hadoop_lib), value = TRUE )
@@ -145,7 +145,7 @@ hive_create <- function( hadoop_home ){
                                 hdfs_site = get_hadoop_config("hdfs-site.xml", file.path(hadoop_home, "conf")),
                                 mapred_default = get_hadoop_config("mapred-default.xml", file.path(hadoop_src, "mapred")),
                                 mapred_site = get_hadoop_config("mapred-site.xml", file.path(hadoop_home, "conf")),
-                                slaves = suppressWarnings(tryCatch(readLines(file.path(hadoop_home, "conf", "slaves")), error = function(x) NA)),
+                                workers = suppressWarnings(tryCatch(readLines(file.path(hadoop_home, "conf", "slaves")), error = function(x) NA)),
                                 masters = suppressWarnings(tryCatch(readLines(file.path(hadoop_home, "conf", "masters")), error = function(x) NA)))
 
 
@@ -181,7 +181,7 @@ hive_is_valid <- function( henv ){
 ## Provides information about the "hive"
 print.hive <- function( x, ... ){
   writeLines( "HIVE: Hadoop Cluster" )
-  writeLines( sprintf("- Avail. datanodes: %d", length(hive_get_slaves(x))) )
+  writeLines( sprintf("- Avail. datanodes: %d", length(hive_get_workers(x))) )
   writeLines( sprintf("'- Max. number Map tasks per datanode: %s",
                       ifelse( hadoop_version(x) >= "2.6.0",
                              hive_get_parameter("mapreduce.tasktracker.map.tasks.maximum", x),
@@ -197,7 +197,7 @@ summary.hive <- function( object, ... ){
     writeLines( sprintf("- Hadoop home/conf directory: %s", hadoop_home(object)) )
     writeLines( sprintf("- Namenode: %s", hive_get_masters(object)) )
     writeLines( "- Datanodes:")
-    writeLines( sprintf("'- %s\n", hive_get_slaves(object)) )
+    writeLines( sprintf("'- %s\n", hive_get_workers(object)) )
 }
 
 ## Start and stop a Hadoop cluster.
@@ -260,7 +260,7 @@ hive_set_nreducer <- function( n, henv = hive() ) {
 }
 
 hive_default_nreducer <- function( henv = hive() ){
-    as.integer(round( length(hive_get_slaves(henv)) / 1.5 ))
+    as.integer(round( length(hive_get_workers(henv)) / 1.5 ))
 }
 
 ## Internal extractor functions
