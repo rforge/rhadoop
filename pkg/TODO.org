@@ -9,3 +9,13 @@ no keep = TRUE argument upon initializing (as indicated in the original paper) b
 * TODO mapred
 change hive streaming to $HADOOP_HOME/bin/mapred utility as described in http://hadoop.apache.org/common/docs/r0.20.2/quickstart.html
  
+* TODO Namenode in summary.hive()
+currently returns NA, possibly because no masters file exists?
+* TODO tm.corpus.NSF
+missing on datacube?!?!
+* TODO jcr webseite
+ist von der Instituts-Homepage verschwunden
+* TODO jcr hasse diagram
+warum schauen die jetzt anders aus?!
+* TODO application NYT
+anzahl stop words kleiner? stop words coverage runter?
