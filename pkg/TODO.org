@@ -1,0 +1,8 @@
+* TODO DTM construction
+Colnames are different since numbers are prefixed with X
+* TODO DSL_stat 
+needs to be fixed since currently it returns Warnings
+* TODO hive_stream
+WARN streaming.StreamJob: -file option is deprecated, please use generic option -files instead.
+* TODO DStorage
+no keep = TRUE argument upon initializing (as indicated in the original paper) but revisions work with DCorpus...
