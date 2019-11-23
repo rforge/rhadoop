@@ -6,3 +6,6 @@ needs to be fixed since currently it returns Warnings
 WARN streaming.StreamJob: -file option is deprecated, please use generic option -files instead.
 * TODO DStorage
 no keep = TRUE argument upon initializing (as indicated in the original paper) but revisions work with DCorpus...
+* TODO mapred
+change hive streaming to $HADOOP_HOME/bin/mapred utility as described in http://hadoop.apache.org/common/docs/r0.20.2/quickstart.html
+ 
