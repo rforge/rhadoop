@@ -79,4 +79,4 @@ DKeys <- function( x )
 
 ## thanks to ceeboo: improved collector version to make reduce step run more efficiently
 .collector2 <- function(x = NULL, y, ...)
-      .Call("_collector2", x, y, package = "DSL")
+      .Call("_collector2", x, y, PACKAGE = "DSL")
