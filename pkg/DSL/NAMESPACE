@@ -3,7 +3,7 @@
 ################################################################################
 
 ## collector in C-code
-useDynLib( "DSL" )
+useDynLib( "DSL" , .registration = TRUE )
 
 ## imports
 importFrom("methods", "getFunction")
