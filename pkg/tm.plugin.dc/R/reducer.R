@@ -11,8 +11,11 @@ TermDocumentMatrix.DCorpus <- function( x, control = list() ){
     ## this is borrowed tm code (2011-11-27) to make things as compatible as possible
     MAP <- function(keypair){
         tf <- tm::termFreq(keypair$value, args)
-        mapply( function(key, value) list( key = key, value = value), make.names(names(tf)),
-               mapply(function(id, count) list(id = id, count = count), as.integer(meta(keypair$value, "id")), tf, SIMPLIFY = FALSE, USE.NAMES = FALSE), SIMPLIFY = FALSE, USE.NAMES = FALSE )
+        if(!length(tf))
+            list(key = NULL, value = list(id = keypair$key, count = 0))
+        else
+            mapply( function(key, value) list( key = key, value = value), names(tf),
+                   mapply(function(id, count) list(id = id, count = count), as.integer(meta(keypair$value, "id")), tf, SIMPLIFY = FALSE, USE.NAMES = FALSE), SIMPLIFY = FALSE, USE.NAMES = FALSE )
     }
     ## Apply above map function, then reduce, then retrieve partial
     ## results from file system (term / {key / term frequency})
@@ -29,28 +32,24 @@ TermDocumentMatrix.DCorpus <- function( x, control = list() ){
     i <- rep(as.integer(terms), unlist(lapply(results, function(x) length(x[[ 1 ]]))))
     rmo <- order(i)
 
-    docs <- factor(unlist( lapply(results, function(x) x[[ 1 ]]) ))
-    alldocs <- sort(as.character(unique(docs)))
-    levels(docs) <- seq_along(levels(docs))
+    docs <- unlist( lapply(results, function(x) x[[ 1 ]]) )
+    j <- match( as.character(docs), names(x) )
 
-    m <- .fix_TDM( simple_triplet_matrix(i = as.integer(i)[rmo],
-                                         j = as.integer(docs)[rmo],
-                                         v = as.numeric(unlist(lapply(results, function(x) x[[ 2 ]])))[rmo],
-                                         nrow = length(uniq_terms),
-                                         ncol = length(x),
-                                         dimnames = list(Terms = uniq_terms,
-                                                         Docs = alldocs)) )
+    ## .SimpleTripletMatrix not exported from tm
+    m <- .fix_TDM( .SimpleTripletMatrix(i = as.integer(i)[rmo],
+                                        j = as.integer(j)[rmo],
+                                        v = as.numeric(unlist(lapply(results, function(x) x[[ 2 ]])))[rmo],
+                                        uniq_terms,
+                                        x) )
+
+    ## tm function not exported: filter_global_bounds
     bg <- control$bounds$global
     if (length(bg) == 2L && is.numeric(bg)) {
         rs <- row_sums(m > 0)
         m <- m[(rs >= bg[1]) & (rs <= bg[2]), ]
     }
 
-    weighting <- control$weighting
-    if (is.null(weighting))
-        weighting <- weightTf
-
-    tm::as.TermDocumentMatrix(m, weighting)
+    tm::as.TermDocumentMatrix(m, weighting = control$weighting)
 }
 
 ## FIXME: we can do this more efficiently
@@ -63,4 +62,35 @@ TermDocumentMatrix.DCorpus <- function( x, control = list() ){
   x$j <- x$j[cmo]
   x$v <- x$v[cmo]
   x
+}
+
+
+
+tm:::TermDocumentMatrix.VCorpus
+function (x, control = list())
+{
+    stopifnot(is.list(control))
+    tflist <- tm_parLapply(unname(content(x)), termFreq, control)
+    v <- unlist(tflist)
+    i <- names(v)
+    terms <- sort(unique(as.character(if (is.null(control$dictionary)) i else control$dictionary)))
+    i <- match(i, terms)
+    j <- rep.int(seq_along(x), lengths(tflist))
+    m <- .SimpleTripletMatrix(i, j, as.numeric(v), terms, x)
+    m <- filter_global_bounds(m, control$bounds$global)
+    .TermDocumentMatrix(m, control$weighting)
+}
+
+
+
+## not exported tm function
+.SimpleTripletMatrix <- function (i, j, v, terms, corpus)
+{
+    docs <- as.character(meta(corpus, "id", "local"))
+    if (length(docs) != length(corpus)) {
+        warning("invalid document identifiers")
+        docs <- NULL
+    }
+    simple_triplet_matrix(i, j, v, nrow = length(terms), ncol = length(corpus),
+        dimnames = list(Terms = terms, Docs = docs))
 }
