@@ -30,15 +30,18 @@ function(x,
     if (is.null(readerControl$language))
         readerControl$language <- "en"
 
-    # Check for parallel element access
-    if (is.function(getS3method("pGetElem", class(x), TRUE))) {
-        elem <- pGetElem(x)
-        # NOTE: DirSource guarantees !is.null(x$uri)
-        names(elem) <- unlist(lapply(elem, function(x) basename(x$uri)))
-        tdl <- DMap(as.DList(elem, DStorage = storage), function(keypair) list(key = keypair$key, value = readerControl$reader(keypair$value, readerControl$language, keypair$key)) )
+    ## Check for parallel element access
+    for(cl in class(x)) {
+        if (is.function(getS3method("pGetElem", cl, TRUE))) {
+            elem <- pGetElem(x)
+            ## NOTE: DirSource guarantees !is.null(x$uri)
+            names(elem) <- unlist(lapply(elem, function(x) basename(x$uri)))
+            tdl <- DMap(as.DList(elem, DStorage = storage), function(keypair) list(key = keypair$key, value = readerControl$reader(keypair$value, readerControl$language, keypair$key)) )
+            break
+        }
+        else
+            stop("Non-vectorized operation not yet implemented.")
     }
-    else
-        stop("Non-vectorized operation not yet implemented.")
 
     df <- data.frame(row.names = seq_along(tdl))
     cm <- structure(list(), class = "CorpusMeta")
