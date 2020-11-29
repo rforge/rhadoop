@@ -10,12 +10,12 @@ citEntry(entry = "Article",
   volume       = "51",
   number       = "5",
   pages        = "1--31",
-  url          = "http://www.jstatsoft.org/v51/i05/",
+  url          = "https://www.jstatsoft.org/v51/i05/",
 
   textVersion  =
   paste("Stefan Theussl, Ingo Feinerer, Kurt Hornik (2012).",
         "A tm Plug-In for Distributed Text Mining in R.",
         "Journal of Statistical Software, 51(5), 1-31.",
-        "URL http://www.jstatsoft.org/v51/i05/.")
+        "URL https://www.jstatsoft.org/v51/i05/.")
 )
 
